@@ -62,8 +62,17 @@ Gia Lai, 2026
 \tableofcontents
 \newpage
 
+% \listoffigures và \listoftables trong report-class đều tự khởi đầu bằng \chapter*,
+% mà \chapter luôn ngắt sang trang mới — nên nếu gọi liên tiếp, "Danh sách bảng" sẽ
+% bị đẩy sang trang riêng dù còn dư chỗ. Ở đây chỉ để \listoffigures ngắt trang một
+% lần, còn danh sách bảng được chèn thủ công (không ngắt trang) để cả hai nằm chung 1 trang.
 \listoffigures
-\listoftables
+\bigskip
+\makeatletter
+{\Large\bfseries\listtablename\par}
+\@mkboth{\MakeUppercase\listtablename}{\MakeUppercase\listtablename}
+\@starttoc{lot}
+\makeatother
 \newpage
 
 % ==================== MỞ ĐẦU ====================
@@ -331,7 +340,7 @@ Với bài toán dự báo hồi quy (không phải phân loại), đầu ra cu�
 \end{equation}
 với $h_w$ là trạng thái ẩn tại bước cuối cùng ($w$) của cửa sổ đầu vào.
 
-Nhờ số tham số ít hơn LSTM (không cần cổng ra và cell state riêng) trong khi vẫn giữ được khả năng nắm bắt phụ thuộc dài hạn tương đương trong nhiều bài toán thực nghiệm, GRU được lựa chọn cho bài toán dự báo PM2.5 với chuỗi dữ liệu có độ dài vừa phải (khoảng 35 nghìn điểm) — nơi tốc độ huấn luyện nhanh hơn có lợi thế rõ rệt khi cần chạy Grid Search nhiều cấu hình (Mục~2.4.2) mà không đánh đổi đáng kể về chất lượng mô hình.
+Nhờ số tham số ít hơn LSTM (không cần cổng ra và cell state riêng) trong khi vẫn giữ được khả năng nắm bắt phụ thuộc dài hạn tương đương trong nhiều bài toán thực nghiệm, GRU được lựa chọn cho bài toán dự báo PM2.5 với chuỗi dữ liệu có độ dài vừa phải (khoảng 35 nghìn điểm) — nơi tốc độ huấn luyện nhanh hơn có lợi thế rõ rệt khi cần chạy Grid Search nhiều cấu hình (Mục~2.4) mà không đánh đổi đáng kể về chất lượng mô hình.
 
 \section{Hàm mất mát và quá trình huấn luyện}
 
@@ -391,7 +400,7 @@ Ba biến cuối (\textit{Dust}, \textit{UV Index}, \textit{UV Index Clear Sky})
 
 \section{Phân tích khám phá dữ liệu (EDA)}
 
-\subsection{Tương quan giữa các chỉ số chất lượng không khí}
+\subsection*{Tương quan giữa các chỉ số chất lượng không khí}
 
 \begin{figure}[H]
 \centering
@@ -402,7 +411,7 @@ Ba biến cuối (\textit{Dust}, \textit{UV Index}, \textit{UV Index Clear Sky})
 
 Hình~\ref{fig:corr} cho thấy PM10 và PM2.5 có tương quan rất cao ($r = 0.91$) — phù hợp với thực tế vì PM2.5 là tập con của PM10. PM2.5 cũng có tương quan trung bình với Carbon Monoxide ($r=0.50$), Nitrogen Dioxide ($r=0.44$) và Aerosol Optical Depth ($r=0.55$) — các chỉ số phần lớn liên quan đến hoạt động đốt cháy (giao thông, công nghiệp). Ngược lại, Dust ($r=0.10$) và UV Index/UV Index Clear Sky ($r \approx -0.01$ đến $-0.03$) gần như không tương quan với PM2.5 — nhất quán với nhận xét về phân phối lệch ở trên.
 
-\subsection{Xu hướng và phân phối theo thời gian}
+\subsection*{Xu hướng và phân phối theo thời gian}
 
 \begin{figure}[H]
 \centering
@@ -420,7 +429,7 @@ Hình~\ref{fig:corr} cho thấy PM10 và PM2.5 có tương quan rất cao ($r = 
 
 Chuỗi PM2.5 (Hình~\ref{fig:lineplot}) dao động chủ yếu trong khoảng 5--30~$\mu$g/m$^3$, với các đợt tăng đột biến ngắn hạn (lên đến $\sim$70~$\mu$g/m$^3$) và biểu hiện lặp lại theo mùa khá rõ. Phân phối PM2.5 (Hình~\ref{fig:hist}) lệch phải, với giá trị trung vị (12.5) thấp hơn giá trị trung bình (13.73) — phù hợp với đặc điểm dữ liệu môi trường, nơi các sự kiện ô nhiễm cao là thiểu số nhưng có biên độ lớn.
 
-\subsection{Tính dừng và xu hướng dài hạn}
+\subsection*{Tính dừng và xu hướng dài hạn}
 
 Để xác định chuỗi PM2.5 có xu hướng dài hạn hay không — yếu tố quan trọng khi lựa chọn cách biểu diễn đầu vào cho mô hình — hai kiểm định tính dừng (ADF và KPSS) và kiểm định xu hướng phi tham số Mann-Kendall được áp dụng trên chuỗi PM2.5 trung bình ngày.
 
@@ -439,7 +448,7 @@ KPSS (H0: dừng) & $0.277$ & $0.10$ & Dừng (không bác bỏ H0) \\
 
 Cả hai kiểm định đều đồng thuận: chuỗi PM2.5 là \textbf{chuỗi dừng} (stationary) — không tồn tại xu hướng ngẫu nhiên (stochastic trend) dài hạn. Kết quả này được củng cố thêm bởi kiểm định \textbf{Seasonal Mann-Kendall} trên PM2.5 trung bình tháng: xu hướng ước lượng là \textit{"no trend"} với $p = 0.7686$ (không đủ bằng chứng thống kê để bác bỏ giả thuyết không có xu hướng đơn điệu), độ dốc Sen's slope chỉ $0.28\,\mu$g/m$^3$/tháng ($\approx 3.3\,\mu$g/m$^3$/năm) — rất nhỏ so với độ lệch chuẩn của chuỗi ($7.06\,\mu$g/m$^3$). Nói cách khác, biến động của PM2.5 trong giai đoạn quan sát chủ yếu đến từ \textbf{tính chu kỳ (seasonality)} chứ không phải từ một xu hướng tăng/giảm dài hạn rõ rệt.
 
-\subsection{Tính chu kỳ (Seasonality)}
+\subsection*{Tính chu kỳ (Seasonality)}
 
 \begin{figure}[H]
 \centering
@@ -468,7 +477,7 @@ Phân rã cổ điển (Hình~\ref{fig:decomp}, period$=365$ ngày trên chuỗi
 
 Phân tích phổ tần số bằng Periodogram (Hình~\ref{fig:periodogram}) — không giả định trước chu kỳ mà quét toàn bộ phổ — xác nhận hai chu kỳ chiếm ưu thế: chu kỳ \textbf{năm ($\approx$363 ngày, power $\approx$246.036)} là mạnh nhất, tiếp theo là chu kỳ \textbf{ngày (24h, power $\approx$31.241)}. Các đỉnh phụ tại 72.6, 41.5 ngày... đều là ước số của $\approx$365 nên là các họa ba (harmonics) của chu kỳ năm, không phải chu kỳ độc lập mới. Điều này cho thấy PM2.5 tại Quy Nhơn chịu ảnh hưởng rõ rệt bởi cả biến động mùa trong năm (gió mùa, thời tiết) lẫn nhịp sinh hoạt hàng ngày.
 
-\subsection{Xu hướng theo Moving Average}
+\subsection*{Xu hướng theo Moving Average}
 
 \begin{figure}[H]
 \centering
@@ -477,9 +486,9 @@ Phân tích phổ tần số bằng Periodogram (Hình~\ref{fig:periodogram}) �
 \label{fig:ma}
 \end{figure}
 
-Hình~\ref{fig:ma} cho thấy các đường trung bình trượt 30 ngày và 90 ngày dao động lặp lại theo chu kỳ hàng năm — tăng vào giai đoạn đầu năm (khoảng tháng 1--4) và giảm dần về giữa năm — chứ không trôi dạt theo một hướng cố định qua các năm 2022--2026, nhất quán với kết luận "không có xu hướng đơn điệu" từ kiểm định Mann-Kendall ở Mục~2.2.3. Chuỗi giá trị thực tế (đường xám) dao động rất mạnh quanh các đường trung bình trượt, phản ánh nhiều đợt tăng đột biến ngắn hạn xen kẽ nền chu kỳ mùa.
+Hình~\ref{fig:ma} cho thấy các đường trung bình trượt 30 ngày và 90 ngày dao động lặp lại theo chu kỳ hàng năm — tăng vào giai đoạn đầu năm (khoảng tháng 1--4) và giảm dần về giữa năm — chứ không trôi dạt theo một hướng cố định qua các năm 2022--2026, nhất quán với kết luận "không có xu hướng đơn điệu" từ kiểm định Mann-Kendall đã trình bày ở trên. Chuỗi giá trị thực tế (đường xám) dao động rất mạnh quanh các đường trung bình trượt, phản ánh nhiều đợt tăng đột biến ngắn hạn xen kẽ nền chu kỳ mùa.
 
-\subsection{Phân phối PM2.5 theo từng năm}
+\subsection*{Phân phối PM2.5 theo từng năm}
 
 \begin{figure}[H]
 \centering
@@ -490,7 +499,7 @@ Hình~\ref{fig:ma} cho thấy các đường trung bình trượt 30 ngày và 9
 
 Hình~\ref{fig:violin} cho thấy giá trị trung vị/trung bình PM2.5 tương đối ổn định quanh 11--14~$\mu$g/m$^3$ trong giai đoạn 2022--2025, nhưng giá trị cực đại (đuôi phân phối) có xu hướng tăng dần qua từng năm — từ khoảng 44~$\mu$g/m$^3$ (2022) lên hơn 70~$\mu$g/m$^3$ (2025--2026) — cho thấy dù mức nền không đổi nhiều nhưng tần suất/cường độ các đợt ô nhiễm đỉnh điểm có dấu hiệu gia tăng. Riêng năm 2026 (dữ liệu mới tính đến tháng 7) có phân phối lệch cao hơn hẳn (trung vị $\approx$14.5) so với các năm trước; tuy nhiên cần lưu ý đây là năm chưa có đủ dữ liệu cả năm, nên tỷ trọng các tháng đầu năm — vốn có PM2.5 cao hơn theo Hình~\ref{fig:seasonal} — chiếm phần lớn có thể ảnh hưởng đến so sánh này.
 
-\subsection{Ngưỡng an toàn theo chuẩn WHO và QCVN Việt Nam}
+\subsection*{Ngưỡng an toàn theo chuẩn WHO và QCVN Việt Nam}
 
 \begin{figure}[H]
 \centering
@@ -501,7 +510,7 @@ Hình~\ref{fig:violin} cho thấy giá trị trung vị/trung bình PM2.5 tươn
 
 Trong tổng số 1.453 ngày có dữ liệu, có \textbf{510 ngày (35.1\%)} có nồng độ PM2.5 trung bình 24h vượt ngưỡng khuyến nghị của WHO Air Quality Guideline 2021 (15~$\mu$g/m$^3$) — cho thấy hơn một phần ba số ngày trong giai đoạn quan sát không đạt chuẩn an toàn theo khuyến nghị quốc tế. Ngược lại, \textbf{không có ngày nào (0.0\%)} vượt ngưỡng QCVN 05:2013/BTNMT của Việt Nam (50~$\mu$g/m$^3$) (Hình~\ref{fig:whoqcvn}) — phản ánh khoảng cách đáng kể giữa quy chuẩn hiện hành trong nước và chuẩn khuyến nghị siết chặt hơn của WHO.
 
-\subsection{Biến động PM2.5 theo mùa trong năm}
+\subsection*{Biến động PM2.5 theo mùa trong năm}
 
 \begin{figure}[H]
 \centering
@@ -510,16 +519,16 @@ Trong tổng số 1.453 ngày có dữ liệu, có \textbf{510 ngày (35.1\%)} c
 \label{fig:seasonal}
 \end{figure}
 
-Hình~\ref{fig:seasonal} cho thấy PM2.5 đạt đỉnh vào các tháng 1--4 (cao nhất ở tháng 4, trung bình $\approx$20~$\mu$g/m$^3$), giảm dần xuống mức thấp nhất vào các tháng 7--10 (trung bình $\approx$10--12~$\mu$g/m$^3$), rồi tăng nhẹ trở lại vào tháng 11--12. Kiểu biến động này phù hợp với đặc trưng khí hậu khu vực Nam Trung Bộ: các tháng đầu năm (gió mùa Đông Bắc, ít mưa) khiến bụi mịn tích tụ nhiều hơn, trong khi mùa mưa (tháng 7--10) giúp rửa trôi các hạt lơ lửng, làm giảm nồng độ PM2.5. Kết quả này nhất quán với nhận xét ở Mục~2.5.2 rằng giai đoạn dữ liệu mới (cuối tháng 7 -- tháng 8/2026, mùa mưa) có PM2.5 thấp và ít biến động hơn.
+Hình~\ref{fig:seasonal} cho thấy PM2.5 đạt đỉnh vào các tháng 1--4 (cao nhất ở tháng 4, trung bình $\approx$20~$\mu$g/m$^3$), giảm dần xuống mức thấp nhất vào các tháng 7--10 (trung bình $\approx$10--12~$\mu$g/m$^3$), rồi tăng nhẹ trở lại vào tháng 11--12. Kiểu biến động này phù hợp với đặc trưng khí hậu khu vực Nam Trung Bộ: các tháng đầu năm (gió mùa Đông Bắc, ít mưa) khiến bụi mịn tích tụ nhiều hơn, trong khi mùa mưa (tháng 7--10) giúp rửa trôi các hạt lơ lửng, làm giảm nồng độ PM2.5. Kết quả này nhất quán với nhận xét ở Mục~2.5 rằng giai đoạn dữ liệu mới (cuối tháng 7 -- tháng 8/2026, mùa mưa) có PM2.5 thấp và ít biến động hơn.
 
 % ==================== 2.3 TIỀN XỬ LÝ ====================
 \section{Tiền xử lý dữ liệu}
 
-\subsection{Loại bỏ đặc trưng không liên quan}
+\subsection*{Loại bỏ đặc trưng không liên quan}
 
-Dựa trên kết quả phân tích tương quan ở Mục~2.2.1 (Correlation Heatmap $|r| < 0.1$, và Cross-Correlation Function ở mọi độ trễ đều $< 0.16$), ba biến \textbf{Dust}, \textbf{UV Index}, \textbf{UV Index Clear Sky} được loại bỏ khỏi tập đặc trưng đầu vào nhằm giảm nhiễu và số chiều dữ liệu.
+Dựa trên kết quả phân tích tương quan ở Mục~2.2 (Correlation Heatmap $|r| < 0.1$, và Cross-Correlation Function ở mọi độ trễ đều $< 0.16$), ba biến \textbf{Dust}, \textbf{UV Index}, \textbf{UV Index Clear Sky} được loại bỏ khỏi tập đặc trưng đầu vào nhằm giảm nhiễu và số chiều dữ liệu.
 
-\subsection{Feature Engineering: Mã hóa chu kỳ thời gian}
+\subsection*{Feature Engineering: Mã hóa chu kỳ thời gian}
 
 Hai đặc trưng thời gian rời rạc \textbf{hour} và \textbf{month} được mã hóa dạng \textbf{cyclical encoding} bằng cặp hàm sin/cos, nhằm tránh điểm gãy giả tạo (ví dụ 23h và 0h về bản chất "gần nhau" chứ không "cách xa 23 đơn vị" như khi giữ nguyên dạng số nguyên):
 
@@ -534,7 +543,7 @@ Hai đặc trưng thời gian rời rạc \textbf{hour} và \textbf{month} đư�
 
 Hai biến \textbf{day} và \textbf{year} bị loại bỏ: \textit{day} (ngày trong tháng) không có chu kỳ vật lý rõ ràng liên quan đến PM2.5, còn \textit{year} là giá trị tuyệt đối không tổng quát hóa được cho các thời điểm tương lai nằm ngoài phạm vi dữ liệu huấn luyện.
 
-\subsection{Chia tập Train / Validation / Test theo thời gian}
+\subsection*{Chia tập Train / Validation / Test theo thời gian}
 
 Do bản chất tuần tự của dữ liệu, việc chia tập không được thực hiện ngẫu nhiên (shuffle) như bài toán học có giám sát thông thường, để tránh rò rỉ dữ liệu (data leakage) từ tương lai vào quá khứ. Dữ liệu được chia theo mốc thời gian với tỷ lệ 70/15/15:
 
@@ -552,22 +561,22 @@ Test & 5.230 & 2025-12-21 02:00 & 2026-07-26 23:00 \\
 \end{tabular}
 \end{table}
 
-\subsection{Chuẩn hóa dữ liệu}
+\subsection*{Chuẩn hóa dữ liệu}
 
 Toàn bộ đặc trưng số được chuẩn hóa về khoảng $[0,1]$ bằng \textbf{MinMaxScaler}. Điểm quan trọng cần lưu ý: scaler chỉ được \textit{fit} trên tập Train, sau đó dùng để \textit{transform} tập Validation và Test — nhằm tránh rò rỉ thông tin thống kê (min/max) của tập validation/test vào quá trình huấn luyện.
 
-\subsection{Sliding Window: Tạo cặp \texorpdfstring{$(X, y)$}{(X, y)}}
+\subsection*{Sliding Window: Tạo cặp \texorpdfstring{$(X, y)$}{(X, y)}}
 
 Từ dữ liệu đã chuẩn hóa, các cặp $(X, y)$ được tạo bằng kỹ thuật sliding window (Mục~1.1) với horizon $= 1$. Với mỗi vị trí $i$, $X_i$ là ma trận gồm \texttt{window\_size} bước thời gian $\times$ 11 đặc trưng, và $y_i$ là giá trị PM2.5 tại bước kế tiếp.
 
 % ==================== 2.4 XÂY DỰNG MÔ HÌNH ====================
 \section{Xây dựng mô hình}
 
-\subsection{Kiến trúc GRU triển khai}
+\subsection*{Kiến trúc GRU triển khai}
 
 Mô hình được cài đặt bằng PyTorch, gồm một khối GRU 2 lớp (\texttt{num\_layers=2}) với dropout $0.2$ giữa các lớp, theo sau bởi một lớp fully-connected tuyến tính ánh xạ trạng thái ẩn tại bước thời gian cuối cùng thành giá trị PM2.5 dự báo (Hình mô tả kiến trúc — xem công thức Mục~1.4). Với \texttt{hidden\_size=64} và 11 đặc trưng đầu vào, mô hình có tổng cộng \textbf{39.809 tham số có thể huấn luyện}.
 
-\subsection{Tinh chỉnh siêu tham số}
+\subsection*{Tinh chỉnh siêu tham số}
 
 Grid Search được thực hiện trên không gian ba siêu tham số: \texttt{window\_size} $\in \{24, 48\}$ giờ, \texttt{hidden\_size} $\in \{32, 64\}$, \texttt{learning\_rate} $\in \{0.001, 0.0005\}$ — mỗi cấu hình huấn luyện tối đa 6 epoch với early stopping (patience$=2$), đánh giá bằng validation loss (MAE, thang chuẩn hóa).
 
@@ -600,7 +609,7 @@ Cấu hình có validation loss thấp nhất tuyệt đối là \texttt{window=
 
 Cửa sổ 24 giờ cũng phù hợp với phát hiện từ ACF (Hình~\ref{fig:acfpacf}): chu kỳ ngày là chu kỳ chi phối hành vi ngắn hạn của PM2.5, nên một cửa sổ dài hơn (48h) không mang lại cải thiện tương xứng với chi phí tính toán tăng thêm.
 
-\subsection{Huấn luyện mô hình cuối cùng}
+\subsection*{Huấn luyện mô hình cuối cùng}
 
 Với cấu hình đã chọn, mô hình được huấn luyện lại với ngân sách epoch lớn hơn (tối đa 25 epoch, patience$=5$) để hội tụ đầy đủ hơn.
 
@@ -613,7 +622,7 @@ Với cấu hình đã chọn, mô hình được huấn luyện lại với ng�
 
 Quá trình huấn luyện dừng sớm ở epoch 15 (val\_loss tốt nhất đạt được ở epoch 10, $\approx 0.0114$), cho thấy early stopping hoạt động hiệu quả trong việc ngăn mô hình overfit lên tập train sau khi đã hội tụ trên tập validation (Hình~\ref{fig:learning_curve}).
 
-\subsection{Đánh giá trên tập Test}
+\subsection*{Đánh giá trên tập Test}
 
 Mô hình GRU được so sánh với hai baseline đơn giản: \textbf{Naive} (dự báo bằng giá trị giờ trước, $t-1$) và \textbf{Seasonal Naive} (dự báo bằng giá trị cùng giờ ngày hôm trước, $t-24$), trên cùng tập mốc thời gian của tập Test.
 
@@ -640,7 +649,7 @@ Seasonal Naive ($t-24$) & 4.699 & 6.691 \\
 
 Mô hình GRU vượt trội đáng kể so với Seasonal Naive (giảm $\sim$75\% MAE) và cải thiện $\sim$11.4\% MAE so với Naive — cho thấy mô hình đã học được nhiều hơn quy luật lặp lại đơn giản theo giờ hoặc theo ngày, mà còn nắm bắt được các phụ thuộc đa biến phức tạp hơn giữa PM2.5 và các chỉ số chất lượng không khí khác. Đáng chú ý, Seasonal Naive có hiệu năng kém hơn hẳn Naive thông thường — điều này phù hợp với đặc điểm chuỗi PM2.5 biến động khá nhanh trong ngày (không lặp lại y hệt theo chu kỳ 24h tuyệt đối), khiến việc chỉ đơn giản lặp lại giá trị "hôm qua cùng giờ" trở nên kém tin cậy hơn so với dùng giá trị ngay trước đó. Hình~\ref{fig:pred_test} cho thấy đường dự báo GRU (xanh lá) bám khá sát đường thực tế (cam), kể cả tại các đợt tăng đột biến.
 
-\subsection{Phân tích Residual}
+\subsection*{Phân tích Residual}
 
 \begin{figure}[H]
 \centering
@@ -656,11 +665,11 @@ Residual trên tập Test có \textbf{mean $= 0.175\,\mu$g/m$^3$}, \textbf{std $
 
 Một điểm mạnh trong thiết kế thực nghiệm của tiểu luận này là việc đánh giá mô hình không chỉ dừng lại ở tập Test (vốn vẫn nằm trong cùng khoảng thời gian thu thập dữ liệu ban đầu), mà còn được kiểm chứng trên một bộ dữ liệu \textbf{hoàn toàn mới}, được thu thập ở một thời điểm sau đó — mô phỏng sát tình huống triển khai thực tế khi mô hình phải dự báo cho dữ liệu chưa từng "nhìn thấy" trong suốt quá trình phát triển.
 
-\subsection{Thu thập và xử lý dữ liệu mới}
+\subsection*{Thu thập và xử lý dữ liệu mới}
 
 Bộ dữ liệu mới (\texttt{new\_data.csv}) gồm \textbf{696 dòng}, từ \texttt{2026-07-27 00:00} đến \texttt{2026-08-24 23:00} (29 ngày), được thu thập từ cùng nguồn Open-Meteo API tại cùng vị trí. Dữ liệu được làm sạch và tiền xử lý theo đúng quy trình đã áp dụng ở Mục~2.1--2.3 (cùng scaler đã fit trên tập Train trước đó — \textbf{không fit lại} để đảm bảo tính nhất quán và tránh leakage). Để có đủ ngữ cảnh (context) cho các điểm dự báo đầu tiên của dữ liệu mới, 24 giờ cuối của tập Test được nối thêm vào trước dữ liệu mới làm phần lịch sử — toàn bộ phần ngữ cảnh này đều là dữ liệu \textit{quá khứ} so với từng điểm cần dự báo, nên không phát sinh rò rỉ dữ liệu.
 
-\subsection{Kết quả dự báo}
+\subsection*{Kết quả dự báo}
 
 \begin{table}[H]
 \centering
@@ -684,7 +693,7 @@ Naive ($t-1$) & 0.857 & 1.428 \\
 
 Mô hình GRU tiếp tục vượt trội hơn baseline Naive trên dữ liệu hoàn toàn mới, với MAE giảm $\sim$10.3\%. Đáng chú ý, sai số tuyệt đối trên dữ liệu mới (MAE $=0.769$) thấp hơn cả sai số trên tập Test (MAE $=1.172$) — điều này phù hợp với thực tế nồng độ PM2.5 trong giai đoạn cuối tháng 7 -- tháng 8/2026 (mùa mưa tại khu vực Nam Trung Bộ) nhìn chung thấp và ít biến động đột biến hơn giai đoạn tập Test, khiến bài toán dự báo trở nên "dễ" hơn tương đối trong giai đoạn này.
 
-\subsection{Phân tích Residual trên dữ liệu mới}
+\subsection*{Phân tích Residual trên dữ liệu mới}
 
 \begin{figure}[H]
 \centering
