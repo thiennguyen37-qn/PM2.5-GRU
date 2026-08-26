@@ -1,0 +1,685 @@
+\documentclass[12pt]{article}
+
+% ---------- Gói lệnh ----------
+\usepackage[T5,T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{vntex}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,shapes.geometric,fit,backgrounds}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue}
+
+\renewcommand{\arraystretch}{1.15}
+
+\tikzset{
+  gatebox/.style={draw, rounded corners=2pt, minimum width=0.8cm, minimum height=0.7cm, fill=orange!25, font=\small},
+  tanhbox/.style={draw, rounded corners=2pt, minimum width=0.8cm, minimum height=0.7cm, fill=blue!15, font=\small},
+  opnode/.style={draw, circle, minimum size=0.42cm, inner sep=0pt, font=\footnotesize},
+  dotn/.style={draw, circle, fill=black, minimum size=2.5pt, inner sep=0pt},
+  cline/.style={-{Latex[length=2mm]}, thick},
+}
+
+\begin{document}
+
+% ==================== TRANG BÌA ====================
+\begin{titlepage}
+\begin{center}
+
+\includegraphics[width=3.2cm]{figures/logo.png}\\[0.4cm]
+{\large\bfseries TRƯỜNG ĐẠI HỌC QUY NHƠN}\\[1.2cm]
+
+{\Large\bfseries TIỂU LUẬN HỌC PHẦN}\\[0.3cm]
+{\Large\bfseries HỌC SÂU VÀ ỨNG DỤNG}\\[0.5cm]
+\rule{0.85\textwidth}{0.5pt}\\[0.8cm]
+
+{\LARGE\bfseries ỨNG DỤNG MẠNG GRU DỰ BÁO NỒNG ĐỘ PM2.5\\[0.2cm] TẠI THÀNH PHỐ QUY NHƠN}\\[0.5cm]
+\rule{0.85\textwidth}{0.5pt}\\[2cm]
+
+\begin{flushleft}
+\hspace{3.5cm}
+\begin{tabular}{ll}
+Trình độ đào tạo: & Thạc sĩ \\[2pt]
+Học viên thực hiện: & Nguyễn Hồ Bảo Thiên \\[2pt]
+Lớp: & Khoa học dữ liệu K28B \\[2pt]
+Giảng viên hướng dẫn: & TS. Lê Xuân Vinh \\[2pt]
+\end{tabular}
+\end{flushleft}
+
+\vfill
+Gia Lai, 2026
+
+\end{center}
+\end{titlepage}
+
+% ==================== MỤC LỤC ====================
+\tableofcontents
+\newpage
+
+\listoffigures
+\listoftables
+\newpage
+
+% ==================== MỞ ĐẦU ====================
+\section*{Mở đầu}
+\addcontentsline{toc}{section}{Mở đầu}
+
+Ô nhiễm không khí, đặc biệt là bụi mịn PM2.5 (các hạt vật chất có đường kính khí động học nhỏ hơn 2.5 micromet), là một trong những mối đe dọa hàng đầu đối với sức khỏe cộng đồng tại các đô thị. Do kích thước siêu nhỏ, PM2.5 có khả năng xâm nhập sâu vào phổi và hệ tuần hoàn, làm gia tăng nguy cơ mắc các bệnh hô hấp và tim mạch. Việc dự báo sớm nồng độ PM2.5 theo thời gian thực có ý nghĩa quan trọng trong việc cảnh báo cộng đồng và hỗ trợ ra quyết định quản lý môi trường đô thị.
+
+Trong tiểu luận này, bài toán được đặt ra là \textbf{dự báo chuỗi thời gian (time series forecasting)}: dự báo nồng độ PM2.5 tại thời điểm kế tiếp (1 giờ sau) dựa trên lịch sử quan trắc đa biến (PM2.5, các chỉ số chất lượng không khí liên quan, và các đặc trưng thời gian) trong một cửa sổ quan sát trong quá khứ. Mô hình học sâu được lựa chọn để giải quyết bài toán là mạng \textbf{GRU (Gated Recurrent Unit)} — một biến thể của mạng nơ-ron hồi quy (Recurrent Neural Network) được thiết kế để nắm bắt các phụ thuộc dài hạn trong dữ liệu tuần tự.
+
+Bộ dữ liệu sử dụng được thu thập từ \textbf{Open-Meteo Air Quality API} tại tọa độ $13.800003^\circ$N, $109.20001^\circ$E — tương ứng vị trí thành phố Quy Nhơn, tỉnh Gia Lai. Dữ liệu được ghi nhận theo giờ, liên tục từ \texttt{2022-08-04 07:00} đến \texttt{2026-07-26 23:00}, gồm 34.865 quan sát.
+
+Thông qua bài tiểu luận này, em thực hành đầy đủ quy trình xây dựng một mô hình học sâu cho bài toán dự báo chuỗi thời gian, bao gồm:
+
+\begin{itemize}
+    \item Thu thập và làm sạch dữ liệu
+    \item Phân tích khám phá dữ liệu (EDA) chuyên biệt cho chuỗi thời gian: tính dừng, tính chu kỳ, xu hướng
+    \item Tiền xử lý dữ liệu và feature engineering (mã hóa chu kỳ thời gian, chuẩn hóa, sliding window)
+    \item Xây dựng và tinh chỉnh siêu tham số cho mô hình GRU
+    \item Đánh giá mô hình trên tập kiểm tra và trên một bộ dữ liệu hoàn toàn mới, được thu thập sau này (out-of-sample thực sự)
+\end{itemize}
+
+Báo cáo sẽ trình bày chi tiết từng bước thực hiện, phân tích kết quả thu được và đưa ra nhận xét về hiệu quả của mô hình.
+
+% ==================== 2. CƠ SỞ LÝ THUYẾT ====================
+\section{Cơ sở lý thuyết}
+
+\subsection{Bài toán dự báo chuỗi thời gian bằng học sâu}
+
+Khác với các bài toán học có giám sát thông thường, dữ liệu chuỗi thời gian có tính tuần tự: giá trị tại thời điểm $t$ có quan hệ phụ thuộc với các giá trị trong quá khứ. Cách tiếp cận phổ biến để chuyển bài toán dự báo chuỗi thời gian thành bài toán học có giám sát là kỹ thuật \textbf{sliding window}: với một cửa sổ quan sát độ dài $w$ (window size) và một khoảng dự báo $h$ (horizon), ta xây dựng cặp dữ liệu
+
+\[
+X_t = (x_{t-w+1}, x_{t-w+2}, \dots, x_t) \quad \longrightarrow \quad y_t = \text{PM2.5}_{t+h}
+\]
+
+trong đó $x_i \in \mathbb{R}^n$ là vector $n$ đặc trưng tại thời điểm $i$ (bao gồm PM2.5 và các chỉ số liên quan). Trong tiểu luận này, $h = 1$ (dự báo 1 giờ tới) và $w$ được xác định thông qua tinh chỉnh siêu tham số ở Mục~4.
+
+Phần còn lại của mục này trình bày cơ sở lý thuyết của các kiến trúc mạng nơ-ron hồi quy theo trình tự \textbf{RNN $\to$ LSTM $\to$ GRU}: xuất phát từ RNN nguyên bản và hạn chế của nó, đến LSTM như một giải pháp đầy đủ, và cuối cùng là GRU — kiến trúc trọng tâm được sử dụng trong tiểu luận — như một phiên bản đơn giản hóa của LSTM.
+
+\subsection{Recurrent Neural Network (RNN)}
+
+Recurrent Neural Network (RNN) là kiến trúc mạng nơ-ron được thiết kế riêng cho dữ liệu tuần tự. Khác với mạng nơ-ron truyền thẳng (feedforward), RNN có một \textbf{kết nối hồi quy}: trạng thái ẩn (hidden state) $h_t$ tại thời điểm $t$ được tính từ đầu vào hiện tại $x_t$ \textit{và} trạng thái ẩn của bước trước đó $h_{t-1}$:
+\begin{equation}
+h_t = \tanh(W_h x_t + U_h h_{t-1} + b_h)
+\end{equation}
+
+Nhờ cơ chế này, $h_t$ về lý thuyết mang thông tin tổng hợp từ toàn bộ lịch sử $x_1, x_2, \dots, x_t$, cho phép RNN xử lý chuỗi có độ dài bất kỳ với cùng một bộ tham số $(W_h, U_h, b_h)$ dùng chung cho mọi bước thời gian.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.22\textwidth}
+\centering
+\begin{tikzpicture}[baseline]
+  \node[draw, rounded corners, minimum width=1.3cm, minimum height=1cm, fill=blue!10] (A) {$A$};
+  \draw[cline] (A.east) to [out=0,in=-90,looseness=1.6] ++(0.55,0.55) to [out=90,in=0,looseness=1.6] (A.north);
+  \draw[cline] (A.south) -- ++(0,-0.9) node[below]{$x_t$};
+  \draw[cline] (A.north) -- ++(0,0.9) node[above]{$h_t$};
+\end{tikzpicture}
+\caption{Dạng cuộn}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.74\textwidth}
+\centering
+\begin{tikzpicture}[baseline]
+  \node[draw, rounded corners, minimum width=1.2cm, minimum height=1cm, fill=blue!10] (A0) at (0,0) {$A$};
+  \node[draw, rounded corners, minimum width=1.2cm, minimum height=1cm, fill=blue!10] (A1) at (2.4,0) {$A$};
+  \node[draw, rounded corners, minimum width=1.2cm, minimum height=1cm, fill=blue!10] (A2) at (4.8,0) {$A$};
+  \draw[cline] (A0.south) -- ++(0,-0.9) node[below]{$x_{t-1}$};
+  \draw[cline] (A1.south) -- ++(0,-0.9) node[below]{$x_{t}$};
+  \draw[cline] (A2.south) -- ++(0,-0.9) node[below]{$x_{t+1}$};
+  \draw[cline] (A0.north) -- ++(0,0.9) node[above]{$h_{t-1}$};
+  \draw[cline] (A1.north) -- ++(0,0.9) node[above]{$h_{t}$};
+  \draw[cline] (A2.north) -- ++(0,0.9) node[above]{$h_{t+1}$};
+  \draw[cline] (-1.1,0) -- (A0.west);
+  \draw[cline] (A0.east) -- (A1.west);
+  \draw[cline] (A1.east) -- (A2.west);
+  \draw[cline] (A2.east) -- ++(1.1,0);
+\end{tikzpicture}
+\caption{Dạng khai triển theo thời gian (unrolled)}
+\end{subfigure}
+\caption{Kiến trúc Recurrent Neural Network (RNN)}
+\label{fig:rnn}
+\end{figure}
+
+Hình~\ref{fig:rnn} minh họa một tế bào RNN $A$ ở hai cách biểu diễn: dạng cuộn (compact, với vòng lặp hồi quy) và dạng khai triển theo thời gian — trong đó cùng một tế bào $A$ (cùng bộ trọng số) được lặp lại tại mỗi bước, nhận đầu vào $x_t$ và trạng thái ẩn từ bước trước để tạo ra $h_t$.
+
+\textbf{Vấn đề vanishing/exploding gradient.} Khi huấn luyện bằng lan truyền ngược qua thời gian (Backpropagation Through Time), đạo hàm của hàm mất mát theo các tham số ở những bước thời gian xa cần được tính thông qua tích của nhiều ma trận Jacobian — mỗi ma trận tương ứng với một bước thời gian:
+\begin{equation}
+\frac{\partial h_t}{\partial h_{t-k}} = \prod_{j=t-k+1}^{t} \frac{\partial h_j}{\partial h_{j-1}}
+\end{equation}
+Nếu các giá trị riêng (eigenvalue) của các ma trận Jacobian này liên tục nhỏ hơn 1, tích trên sẽ tiến dần về 0 khi $k$ tăng (\textbf{vanishing gradient}) — khiến mô hình gần như không học được các phụ thuộc xa; ngược lại nếu lớn hơn 1, tích sẽ bùng nổ (\textbf{exploding gradient}). Đây là hạn chế căn bản của RNN nguyên bản, làm động lực cho sự ra đời của LSTM.
+
+\subsection{Long Short-Term Memory (LSTM)}
+
+LSTM (Hochreiter và Schmidhuber, 1997) khắc phục vấn đề vanishing gradient của RNN bằng cách bổ sung một \textbf{trạng thái cell (cell state)} $C_t$ — một "đường cao tốc" thông tin chạy xuyên suốt chuỗi thời gian, chỉ trải qua các phép biến đổi tuyến tính đơn giản (nhân và cộng theo từng phần tử) thay vì phải đi qua hàm kích hoạt phi tuyến ở mỗi bước như trạng thái ẩn của RNN. Nhờ đó, gradient có thể lan truyền ngược qua nhiều bước thời gian mà ít bị suy giảm hơn.
+
+LSTM điều khiển luồng thông tin ra/vào cell state thông qua ba \textbf{cổng (gate)}, mỗi cổng là một lớp sigmoid cho giá trị trong $[0,1]$ đóng vai trò "van" điều tiết:
+
+\textbf{Cổng quên (Forget gate)} — quyết định giữ lại bao nhiêu phần trăm thông tin từ cell state cũ:
+\begin{equation}
+f_t = \sigma(W_f x_t + U_f h_{t-1} + b_f)
+\end{equation}
+
+\textbf{Cổng vào (Input gate)} và \textbf{trạng thái cell ứng viên} — quyết định thông tin mới nào sẽ được thêm vào:
+\begin{equation}
+i_t = \sigma(W_i x_t + U_i h_{t-1} + b_i)
+\end{equation}
+\begin{equation}
+\tilde{C}_t = \tanh(W_C x_t + U_C h_{t-1} + b_C)
+\end{equation}
+
+\textbf{Cập nhật trạng thái cell} — kết hợp phần giữ lại (qua cổng quên) và phần thêm mới (qua cổng vào):
+\begin{equation}
+C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t
+\end{equation}
+
+\textbf{Cổng ra (Output gate)} và \textbf{trạng thái ẩn} — quyết định phần nào của cell state được "lộ ra" thành đầu ra:
+\begin{equation}
+o_t = \sigma(W_o x_t + U_o h_{t-1} + b_o)
+\end{equation}
+\begin{equation}
+h_t = o_t \odot \tanh(C_t)
+\end{equation}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[>=Latex]
+  \node[opnode] (FM)  at (-4.5,3.2) {$\times$};
+  \node[opnode] (ADD) at (-1.5,3.2) {$+$};
+  \node[dotn]   (CT)  at (-0.3,3.2) {};
+
+  \draw[cline] (-6.8,3.2) node[left]{$C_{t-1}$} -- (FM);
+  \draw[cline] (FM) -- (ADD);
+  \draw[cline] (ADD) -- (CT);
+  \draw[cline] (CT) -- ++(2.1,0) node[right]{$C_t$};
+
+  \node[opnode]  (IM)    at (-1.5,1.9) {$\times$};
+  \node[tanhbox] (tanhC) at (-0.3,1.9) {$\tanh$};
+  \node[opnode]  (OM)    at (0.8,1.9)  {$\times$};
+
+  \draw[cline] (IM.north) -- (ADD.south);
+  \draw[cline] (CT) -- (tanhC.north);
+  \draw[cline] (tanhC.east) -- (OM.west);
+
+  \node[gatebox] (f) at (-4.5,0.6) {$\sigma$};
+  \node[gatebox] (i) at (-3.0,0.6) {$\sigma$};
+  \node[tanhbox] (g) at (-1.5,0.6) {$\tanh$};
+  \node[gatebox] (o) at (0.8,0.6)  {$\sigma$};
+
+  \draw[cline] (f.north) -- (FM.south);
+  \draw[cline] (g.north) -- (IM.south);
+  \draw[cline] (i.north) -- (-3.0,1.3) -- (-1.71,1.3) -- (IM.west);
+  \draw[cline] (o.north) -- (OM.south);
+
+  \draw[cline] (-6.8,0.0) node[left]{$h_{t-1}$} -- (-6.5,0.0);
+  \draw (-6.5,0.0) -- (-6.5,-0.9);
+  \draw[cline] (OM.east) -- (1.8,1.9) -- (1.8,0.0) node[right]{$h_t$};
+
+  \draw (-6.5,-0.9) -- (0.8,-0.9);
+  \draw[cline] (-4.5,-0.9) -- (f.south);
+  \draw[cline] (-3.0,-0.9) -- (i.south);
+  \draw[cline] (-1.5,-0.9) -- (g.south);
+  \draw[cline] (0.8,-0.9) -- (o.south);
+  \node[dotn] at (-6.5,-0.9) {};
+  \node[dotn] at (-4.5,-0.9) {};
+  \node[dotn] at (-3.0,-0.9) {};
+  \node[dotn] at (-1.5,-0.9) {};
+
+  \node[dotn] (XD) at (-2.25,-1.6) {};
+  \draw[cline] (XD) -- (-2.25,-0.9);
+  \draw[cline] (-4.8,-1.6) -- (XD) node[midway,below]{$x_t$};
+\end{tikzpicture}
+\caption{Kiến trúc LSTM cell}
+\label{fig:lstm}
+\end{figure}
+
+Hình~\ref{fig:lstm} minh họa luồng thông tin trong một tế bào LSTM: đường ngang phía trên (cell state $C_t$) chỉ tương tác với phần còn lại của mạng qua hai phép toán đơn giản (nhân với $f_t$, cộng với $i_t \odot \tilde{C}_t$); trạng thái ẩn $h_t$ được tính riêng ở đường phía dưới, là bản "lọc" của $\tanh(C_t)$ qua cổng ra $o_t$. Với ba cổng độc lập và một cell state riêng biệt, LSTM có nhiều tham số hơn RNN nhưng giải quyết hiệu quả vấn đề vanishing gradient, trở thành kiến trúc RNN có cổng được sử dụng rộng rãi nhất trong nhiều năm.
+
+\subsection{Gated Recurrent Unit (GRU)}
+
+GRU (Cho và cộng sự, 2014) là một biến thể \textbf{đơn giản hóa} của LSTM, được thiết kế với động lực giữ lại khả năng kiểm soát luồng thông tin dài hạn của LSTM nhưng với ít cổng và ít tham số hơn. So với LSTM, GRU có hai thay đổi cấu trúc chính:
+\begin{itemize}
+    \item \textbf{Gộp cổng quên và cổng vào} thành một \textbf{cổng cập nhật (update gate)} $z_t$ duy nhất, điều khiển đồng thời việc "quên" trạng thái cũ và "nạp" trạng thái mới thông qua một phép nội suy tuyến tính duy nhất.
+    \item \textbf{Loại bỏ cell state riêng biệt}: GRU chỉ có một trạng thái ẩn $h_t$ duy nhất, vừa đóng vai trò "bộ nhớ dài hạn" (tương tự $C_t$ của LSTM) vừa là đầu ra tại mỗi bước — không cần cổng ra $o_t$ và phép biến đổi $\tanh(C_t)$ riêng như LSTM.
+\end{itemize}
+
+Đây chính là kiến trúc \textbf{trọng tâm} được sử dụng để xây dựng mô hình dự báo PM2.5 trong tiểu luận này. Tại mỗi bước thời gian $t$, với đầu vào $x_t$ và trạng thái ẩn trước đó $h_{t-1}$, GRU tính toán như sau:
+
+\textbf{Cổng đặt lại (Reset gate)} — quyết định mức độ "quên" thông tin quá khứ khi tính trạng thái ứng viên:
+\begin{equation}
+r_t = \sigma(W_r x_t + U_r h_{t-1} + b_r)
+\end{equation}
+
+\textbf{Cổng cập nhật (Update gate)} — quyết định tỷ lệ giữa việc giữ lại trạng thái cũ và cập nhật bằng trạng thái ứng viên mới:
+\begin{equation}
+z_t = \sigma(W_z x_t + U_z h_{t-1} + b_z)
+\end{equation}
+
+\textbf{Trạng thái ẩn ứng viên (Candidate hidden state)}:
+\begin{equation}
+\tilde{h}_t = \tanh\big(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h\big)
+\end{equation}
+
+\textbf{Trạng thái ẩn cập nhật} — nội suy tuyến tính giữa trạng thái cũ và trạng thái ứng viên, với hệ số nội suy do $z_t$ quyết định:
+\begin{equation}
+h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t
+\end{equation}
+
+Trong đó $\sigma(\cdot)$ là hàm sigmoid, $\odot$ là phép nhân theo từng phần tử (Hadamard product), $W_{(\cdot)}, U_{(\cdot)}, b_{(\cdot)}$ là các trọng số và hệ số chệch cần học.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[>=Latex]
+  \node[dotn] (BD) at (-4.5,3.0) {};
+  \node[opnode] (M1) at (-2.0,3.0) {$\times$};
+  \node[opnode] (P)  at (1.4,3.0)  {$+$};
+
+  \draw[cline] (-5.7,3.0) node[left]{$h_{t-1}$} -- (BD);
+  \draw[cline] (BD) -- (M1);
+  \draw[cline] (M1) -- (P);
+  \draw[cline] (P) -- ++(1.3,0) node[right]{$h_t$};
+
+  \node[opnode] (RM) at (-3.3,1.8) {$\times$};
+  \node[opnode,font=\tiny] (ON) at (-2.0,1.8) {$1{-}$};
+  \node[opnode] (M2) at (1.4,1.8)  {$\times$};
+
+  \draw[cline] (ON.north) -- (M1.south);
+  \draw (BD) -- (-4.5,1.8);
+  \draw[cline] (-4.5,1.8) -- (RM.west);
+  \draw[cline] (M2.north) -- (P.south);
+
+  \node[gatebox] (r)  at (-3.3,0.6) {$\sigma$};
+  \node[gatebox] (z)  at (-2.0,0.6) {$\sigma$};
+  \node[tanhbox] (hc) at (1.4,0.6)  {$\tanh$};
+
+  \draw[cline] (r.north) -- (RM.south);
+  \node[dotn] (ZB) at (-2.0,1.15) {};
+  \draw (z.north) -- (ZB);
+  \draw[cline] (ZB) -- (ON.south);
+  \draw[cline] (ZB) -- (0.98,1.15) -- (0.98,1.8) -- (M2.west);
+
+  \draw[cline] (RM.east) -- ++(0,-0.35) -- (1.0,1.5) -- (hc.west);
+  \draw[cline] (hc.north) -- (M2.south);
+
+  \draw (BD) -- (-4.5,-0.9);
+  \draw (-4.5,-0.9) -- (-2.0,-0.9);
+  \draw[cline] (-3.3,-0.9) -- (r.south);
+  \draw[cline] (-2.0,-0.9) -- (z.south);
+  \node[dotn] at (-4.5,-0.9) {};
+
+  \node[dotn] (XD) at (-2.65,-1.6) {};
+  \draw[cline] (XD) -- (-2.65,-0.9);
+  \draw[cline] (-4.8,-1.6) -- (XD) node[midway,below]{$x_t$};
+  \draw[cline] (XD) -- (1.4,-1.6) -- (hc.south);
+\end{tikzpicture}
+\caption{Kiến trúc GRU cell}
+\label{fig:gru}
+\end{figure}
+
+Hình~\ref{fig:gru} minh họa GRU: không còn đường cell state riêng như LSTM, trạng thái ẩn $h_{t-1}$ vừa đi thẳng vào phép nội suy $(1-z_t)\odot h_{t-1}$ (đường trên), vừa được điều tiết bởi cổng đặt lại $r_t$ trước khi tham gia tính trạng thái ứng viên $\tilde{h}_t$ (đường dưới). Khi $z_t \to 0$, trạng thái ẩn gần như được giữ nguyên qua bước thời gian — cơ chế then chốt giúp GRU giảm thiểu vanishing gradient tương tự cell state của LSTM; khi $z_t \to 1$, trạng thái được thay gần như hoàn toàn bằng trạng thái ứng viên mới.
+
+Với bài toán dự báo hồi quy (không phải phân loại), đầu ra cuối cùng của mô hình là trạng thái ẩn tại bước thời gian cuối của chuỗi, đưa qua một lớp fully-connected tuyến tính để cho ra giá trị PM2.5 dự báo:
+\begin{equation}
+\hat{y}_t = W_{fc}\, h_{w} + b_{fc}
+\end{equation}
+với $h_w$ là trạng thái ẩn tại bước cuối cùng ($w$) của cửa sổ đầu vào.
+
+\begin{table}[H]
+\centering
+\caption{So sánh RNN, LSTM và GRU}
+\begin{tabular}{lccc}
+\toprule
+Tiêu chí & RNN & LSTM & GRU \\
+\midrule
+Số cổng (gate) & 0 & 3 (quên, vào, ra) & 2 (đặt lại, cập nhật) \\
+Trạng thái riêng biệt & Không & Cell state $C_t$ + $h_t$ & Chỉ $h_t$ \\
+Số tham số (tương đối) & Thấp nhất & Cao nhất & Trung bình ($\approx$75\% LSTM) \\
+Khả năng chống vanishing gradient & Kém & Tốt & Tốt \\
+Tốc độ huấn luyện & Nhanh nhất & Chậm nhất & Nhanh hơn LSTM \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Nhờ số tham số ít hơn LSTM (không cần cổng ra và cell state riêng) trong khi vẫn giữ được khả năng nắm bắt phụ thuộc dài hạn tương đương trong nhiều bài toán thực nghiệm, GRU được lựa chọn cho bài toán dự báo PM2.5 với chuỗi dữ liệu có độ dài vừa phải (khoảng 35 nghìn điểm) — nơi tốc độ huấn luyện nhanh hơn có lợi thế rõ rệt khi cần chạy Grid Search nhiều cấu hình (Mục~4.2) mà không đánh đổi đáng kể về chất lượng mô hình.
+
+\subsection{Hàm mất mát và quá trình huấn luyện}
+
+Hàm mất mát được sử dụng là \textbf{Mean Absolute Error (MAE, hay L1 Loss)}:
+\begin{equation}
+\mathcal{L} = \frac{1}{N}\sum_{i=1}^{N} |y_i - \hat{y}_i|
+\end{equation}
+
+MAE được chọn thay vì MSE (Mean Squared Error) vì hai lý do: (1) MAE khớp trực tiếp với chỉ số đánh giá cuối cùng của mô hình, và (2) MAE ít bị chi phối bởi các giá trị ngoại lai (outlier) hơn — điều quan trọng với dữ liệu PM2.5 vốn có các đợt tăng đột biến (spike) do các sự kiện ô nhiễm bất thường.
+
+Quá trình huấn luyện sử dụng thuật toán tối ưu \textbf{Adam}, kết hợp kỹ thuật \textbf{Early Stopping}: huấn luyện dừng lại nếu validation loss không cải thiện sau một số epoch liên tiếp (patience), và trọng số của epoch có validation loss thấp nhất được giữ lại làm mô hình cuối cùng — giúp tránh overfitting.
+
+% ==================== 3. PHÂN TÍCH DỮ LIỆU ====================
+\section{Phân tích dữ liệu}
+
+\subsection{Mô tả dữ liệu}
+
+Bộ dữ liệu gốc (\texttt{raw\_data.csv}) được tải trực tiếp từ Open-Meteo Air Quality API, trải dài từ năm 2016 nhưng phần lớn giai đoạn đầu (2016 -- giữa 2022) không có dữ liệu (toàn bộ giá trị NaN) do trạm quan trắc/API chưa cung cấp dữ liệu ở giai đoạn đó. Sau bước làm sạch (loại bỏ các hàng toàn NaN và các cột chứa NaN — trong đó \texttt{carbon\_dioxide} và \texttt{methane} bị loại hoàn toàn vì chỉ có dữ liệu một phần thời gian), bộ dữ liệu sạch (\texttt{cleaned\_data.csv}) còn lại \textbf{34.865 dòng $\times$ 15 cột}, liên tục theo từng giờ từ \texttt{2022-08-04 07:00:00} đến \texttt{2026-07-26 23:00:00}, không còn giá trị thiếu.
+
+Các biến trong bộ dữ liệu sau khi chuẩn hóa tên cột:
+
+\begin{itemize}
+    \item \textbf{PM10}: Nồng độ bụi mịn đường kính $\leq 10\,\mu$m ($\mu$g/m$^3$)
+    \item \textbf{PM2.5}: Nồng độ bụi mịn đường kính $\leq 2.5\,\mu$m ($\mu$g/m$^3$) — \textit{biến mục tiêu}
+    \item \textbf{Carbon Monoxide (CO)}: Khí carbon monoxide ($\mu$g/m$^3$)
+    \item \textbf{Nitrogen Dioxide (NO$_2$)}: Khí nitơ đioxit ($\mu$g/m$^3$)
+    \item \textbf{Sulphur Dioxide (SO$_2$)}: Khí lưu huỳnh đioxit ($\mu$g/m$^3$)
+    \item \textbf{Ozone (O$_3$)}: Khí ozone tầng mặt đất ($\mu$g/m$^3$)
+    \item \textbf{Aerosol Optical Depth (AOD)}: Độ dày quang học sol khí, phản ánh mức độ khí quyển bị che khuất bởi hạt lơ lửng (không đơn vị)
+    \item \textbf{Dust}: Nồng độ bụi ($\mu$g/m$^3$)
+    \item \textbf{UV Index}, \textbf{UV Index Clear Sky}: Chỉ số tia UV thực tế và giả định trời quang mây (không đơn vị)
+    \item \textbf{day, month, year, hour}: Các thành phần thời gian tách từ cột \texttt{time}
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Thống kê mô tả các biến định lượng}
+\begin{tabular}{lrrrrrr}
+\toprule
+Biến & Đơn vị & Mean & Std & Min & Median & Max \\
+\midrule
+PM10 & $\mu$g/m$^3$ & 19.76 & 9.91 & 0.40 & 18.20 & 97.80 \\
+PM2.5 & $\mu$g/m$^3$ & 13.73 & 7.06 & 0.30 & 12.50 & 71.50 \\
+Carbon Monoxide & $\mu$g/m$^3$ & 249.38 & 109.28 & 59.00 & 226.00 & 1185.00 \\
+Nitrogen Dioxide & $\mu$g/m$^3$ & 3.05 & 2.59 & 0.00 & 2.30 & 29.30 \\
+Sulphur Dioxide & $\mu$g/m$^3$ & 2.23 & 1.37 & 0.10 & 1.90 & 13.50 \\
+Ozone & $\mu$g/m$^3$ & 81.58 & 30.30 & 4.00 & 79.00 & 259.00 \\
+Aerosol Optical Depth & --- & 0.25 & 0.16 & 0.02 & 0.21 & 2.37 \\
+Dust & $\mu$g/m$^3$ & 0.42 & 1.45 & 0.00 & 0.00 & 37.00 \\
+UV Index & --- & 2.01 & 3.21 & 0.00 & 0.00 & 13.65 \\
+UV Index Clear Sky & --- & 2.53 & 3.84 & 0.00 & 0.00 & 14.10 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Ba biến cuối (\textit{Dust}, \textit{UV Index}, \textit{UV Index Clear Sky}) có trung vị bằng 0, cho thấy phân phối lệch phải rất mạnh với phần lớn giá trị bằng 0 — dấu hiệu cho thấy các biến này có thể ít mang thông tin hữu ích cho việc dự báo PM2.5, sẽ được kiểm chứng qua phân tích tương quan ở phần tiếp theo.
+
+\subsection{Phân tích khám phá dữ liệu (EDA)}
+
+\subsubsection{Tương quan giữa các chỉ số chất lượng không khí}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/correlation_heatmap.png}
+\caption{Ma trận tương quan Pearson giữa các chỉ số chất lượng không khí}
+\label{fig:corr}
+\end{figure}
+
+Hình~\ref{fig:corr} cho thấy PM10 và PM2.5 có tương quan rất cao ($r = 0.91$) — phù hợp với thực tế vì PM2.5 là tập con của PM10. PM2.5 cũng có tương quan trung bình với Carbon Monoxide ($r=0.50$), Nitrogen Dioxide ($r=0.44$) và Aerosol Optical Depth ($r=0.55$) — các chỉ số phần lớn liên quan đến hoạt động đốt cháy (giao thông, công nghiệp). Ngược lại, Dust ($r=0.10$) và UV Index/UV Index Clear Sky ($r \approx -0.01$ đến $-0.03$) gần như không tương quan với PM2.5 — nhất quán với nhận xét về phân phối lệch ở trên.
+
+\subsubsection{Xu hướng và phân phối theo thời gian}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/pm25_lineplot.png}
+\caption{Chuỗi thời gian nồng độ PM2.5 (2022--2026)}
+\label{fig:lineplot}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/pm25_histogram.png}
+\caption{Phân phối PM2.5: Histogram và ước lượng mật độ (KDE)}
+\label{fig:hist}
+\end{figure}
+
+Chuỗi PM2.5 (Hình~\ref{fig:lineplot}) dao động chủ yếu trong khoảng 5--30~$\mu$g/m$^3$, với các đợt tăng đột biến ngắn hạn (lên đến $\sim$70~$\mu$g/m$^3$) và biểu hiện lặp lại theo mùa khá rõ. Phân phối PM2.5 (Hình~\ref{fig:hist}) lệch phải, với giá trị trung vị (12.5) thấp hơn giá trị trung bình (13.73) — phù hợp với đặc điểm dữ liệu môi trường, nơi các sự kiện ô nhiễm cao là thiểu số nhưng có biên độ lớn.
+
+\subsubsection{Tính dừng và xu hướng dài hạn}
+
+Để xác định chuỗi PM2.5 có xu hướng dài hạn hay không — yếu tố quan trọng khi lựa chọn cách biểu diễn đầu vào cho mô hình — hai kiểm định tính dừng (ADF và KPSS) và kiểm định xu hướng phi tham số Mann-Kendall được áp dụng trên chuỗi PM2.5 trung bình ngày.
+
+\begin{table}[H]
+\centering
+\caption{Kết quả kiểm định tính dừng (PM2.5 trung bình ngày)}
+\begin{tabular}{lrrl}
+\toprule
+Kiểm định & Thống kê & p-value & Kết luận \\
+\midrule
+ADF (H0: có unit root) & $-5.999$ & $<0.0001$ & Dừng (bác bỏ H0) \\
+KPSS (H0: dừng) & $0.277$ & $0.10$ & Dừng (không bác bỏ H0) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Cả hai kiểm định đều đồng thuận: chuỗi PM2.5 là \textbf{chuỗi dừng} (stationary) — không tồn tại xu hướng ngẫu nhiên (stochastic trend) dài hạn. Kết quả này được củng cố thêm bởi kiểm định \textbf{Seasonal Mann-Kendall} trên PM2.5 trung bình tháng: xu hướng ước lượng là \textit{"no trend"} với $p = 0.7686$ (không đủ bằng chứng thống kê để bác bỏ giả thuyết không có xu hướng đơn điệu), độ dốc Sen's slope chỉ $0.28\,\mu$g/m$^3$/tháng ($\approx 3.3\,\mu$g/m$^3$/năm) — rất nhỏ so với độ lệch chuẩn của chuỗi ($7.06\,\mu$g/m$^3$). Nói cách khác, biến động của PM2.5 trong giai đoạn quan sát chủ yếu đến từ \textbf{tính chu kỳ (seasonality)} chứ không phải từ một xu hướng tăng/giảm dài hạn rõ rệt.
+
+\subsubsection{Tính chu kỳ (Seasonality)}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/acf_pacf.png}
+\caption{ACF và PACF của PM2.5 theo giờ (168 lag $=$ 1 tuần)}
+\label{fig:acfpacf}
+\end{figure}
+
+Biểu đồ ACF (Hình~\ref{fig:acfpacf}) thể hiện các đỉnh lặp lại rõ rệt tại lag 24, 48, 72, 96... giờ — xác nhận \textbf{chu kỳ ngày (24 giờ)} là chu kỳ chi phối hành vi ngắn hạn của PM2.5, phù hợp với quy luật sinh hoạt/giao thông đô thị (giờ cao điểm) lặp lại mỗi ngày. Đây là căn cứ quan trọng để lựa chọn kích thước cửa sổ đầu vào (window size) cho mô hình ở Mục~4.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/decomposition.png}
+\caption{Phân rã chuỗi thời gian PM2.5 theo chu kỳ năm (Trend + Seasonal + Residual)}
+\label{fig:decomp}
+\end{figure}
+
+Phân rã cổ điển (Hình~\ref{fig:decomp}, period$=365$ ngày trên chuỗi trung bình ngày) cho thấy thành phần Trend dao động nhẹ trong khoảng 12--14.7, không có xu hướng đơn điệu rõ ràng — nhất quán với kết luận từ Mann-Kendall. Thành phần Residual sau phân rã được kiểm định Ljung-Box tại các lag 10, 20, 30, 60, 90: kết quả cho thấy vẫn còn tự tương quan có ý nghĩa thống kê ở một số lag, nghĩa là phân rã cổ điển theo chu kỳ năm chưa tách hết toàn bộ cấu trúc chuỗi — phù hợp với thực tế vì chuỗi còn chứa chu kỳ ngày (24h) mà phép phân rã theo period$=365$ không nắm bắt được.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/periodogram.png}
+\caption{Periodogram (FFT) của PM2.5 — xác nhận các chu kỳ chiếm ưu thế}
+\label{fig:periodogram}
+\end{figure}
+
+Phân tích phổ tần số bằng Periodogram (Hình~\ref{fig:periodogram}) — không giả định trước chu kỳ mà quét toàn bộ phổ — xác nhận hai chu kỳ chiếm ưu thế: chu kỳ \textbf{năm ($\approx$363 ngày, power $\approx$246.036)} là mạnh nhất, tiếp theo là chu kỳ \textbf{ngày (24h, power $\approx$31.241)}. Các đỉnh phụ tại 72.6, 41.5 ngày... đều là ước số của $\approx$365 nên là các họa ba (harmonics) của chu kỳ năm, không phải chu kỳ độc lập mới. Điều này cho thấy PM2.5 tại Quy Nhơn chịu ảnh hưởng rõ rệt bởi cả biến động mùa trong năm (gió mùa, thời tiết) lẫn nhịp sinh hoạt hàng ngày.
+
+% ==================== 4. TIỀN XỬ LÝ ====================
+\section{Tiền xử lý dữ liệu}
+
+\subsection{Loại bỏ đặc trưng không liên quan}
+
+Dựa trên kết quả phân tích tương quan ở Mục~2.2.1 (Correlation Heatmap $|r| < 0.1$, và Cross-Correlation Function ở mọi độ trễ đều $< 0.16$), ba biến \textbf{Dust}, \textbf{UV Index}, \textbf{UV Index Clear Sky} được loại bỏ khỏi tập đặc trưng đầu vào nhằm giảm nhiễu và số chiều dữ liệu.
+
+\subsection{Feature Engineering: Mã hóa chu kỳ thời gian}
+
+Hai đặc trưng thời gian rời rạc \textbf{hour} và \textbf{month} được mã hóa dạng \textbf{cyclical encoding} bằng cặp hàm sin/cos, nhằm tránh điểm gãy giả tạo (ví dụ 23h và 0h về bản chất "gần nhau" chứ không "cách xa 23 đơn vị" như khi giữ nguyên dạng số nguyên):
+
+\begin{equation}
+\text{hour\_sin} = \sin\!\left(\frac{2\pi \cdot \text{hour}}{24}\right), \qquad
+\text{hour\_cos} = \cos\!\left(\frac{2\pi \cdot \text{hour}}{24}\right)
+\end{equation}
+\begin{equation}
+\text{month\_sin} = \sin\!\left(\frac{2\pi \cdot \text{month}}{12}\right), \qquad
+\text{month\_cos} = \cos\!\left(\frac{2\pi \cdot \text{month}}{12}\right)
+\end{equation}
+
+Hai biến \textbf{day} và \textbf{year} bị loại bỏ: \textit{day} (ngày trong tháng) không có chu kỳ vật lý rõ ràng liên quan đến PM2.5, còn \textit{year} là giá trị tuyệt đối không tổng quát hóa được cho các thời điểm tương lai nằm ngoài phạm vi dữ liệu huấn luyện.
+
+\subsection{Chia tập Train / Validation / Test theo thời gian}
+
+Do bản chất tuần tự của dữ liệu, việc chia tập không được thực hiện ngẫu nhiên (shuffle) như bài toán học có giám sát thông thường, để tránh rò rỉ dữ liệu (data leakage) từ tương lai vào quá khứ. Dữ liệu được chia theo mốc thời gian với tỷ lệ 70/15/15:
+
+\begin{table}[H]
+\centering
+\caption{Phân chia tập Train / Validation / Test theo thời gian}
+\begin{tabular}{lrll}
+\toprule
+Tập & Số dòng & Từ & Đến \\
+\midrule
+Train & 24.405 & 2022-08-04 07:00 & 2025-05-17 03:00 \\
+Validation & 5.230 & 2025-05-17 04:00 & 2025-12-21 01:00 \\
+Test & 5.230 & 2025-12-21 02:00 & 2026-07-26 23:00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Chuẩn hóa dữ liệu}
+
+Toàn bộ đặc trưng số được chuẩn hóa về khoảng $[0,1]$ bằng \textbf{MinMaxScaler}. Điểm quan trọng cần lưu ý: scaler chỉ được \textit{fit} trên tập Train, sau đó dùng để \textit{transform} tập Validation và Test — nhằm tránh rò rỉ thông tin thống kê (min/max) của tập validation/test vào quá trình huấn luyện.
+
+\subsection{Sliding Window: Tạo cặp $(X, y)$}
+
+Từ dữ liệu đã chuẩn hóa, các cặp $(X, y)$ được tạo bằng kỹ thuật sliding window (Mục~1.1) với horizon $= 1$. Với mỗi vị trí $i$, $X_i$ là ma trận gồm \texttt{window\_size} bước thời gian $\times$ 11 đặc trưng, và $y_i$ là giá trị PM2.5 tại bước kế tiếp.
+
+% ==================== 5. XÂY DỰNG MÔ HÌNH ====================
+\section{Xây dựng mô hình}
+
+\subsection{Kiến trúc GRU triển khai}
+
+Mô hình được cài đặt bằng PyTorch, gồm một khối GRU 2 lớp (\texttt{num\_layers=2}) với dropout $0.2$ giữa các lớp, theo sau bởi một lớp fully-connected tuyến tính ánh xạ trạng thái ẩn tại bước thời gian cuối cùng thành giá trị PM2.5 dự báo (Hình mô tả kiến trúc — xem công thức Mục~1.4). Với \texttt{hidden\_size=64} và 11 đặc trưng đầu vào, mô hình có tổng cộng \textbf{39.809 tham số có thể huấn luyện}.
+
+\subsection{Tinh chỉnh siêu tham số}
+
+Grid Search được thực hiện trên không gian ba siêu tham số: \texttt{window\_size} $\in \{24, 48\}$ giờ, \texttt{hidden\_size} $\in \{32, 64\}$, \texttt{learning\_rate} $\in \{0.001, 0.0005\}$ — mỗi cấu hình huấn luyện tối đa 6 epoch với early stopping (patience$=2$), đánh giá bằng validation loss (MAE, thang chuẩn hóa).
+
+\begin{table}[H]
+\centering
+\caption{Kết quả Grid Search siêu tham số (sắp xếp theo validation loss)}
+\begin{tabular}{rrrr}
+\toprule
+window\_size (h) & hidden\_size & learning\_rate & val\_loss (MAE, scaled) \\
+\midrule
+48 & 64 & 0.001  & 0.01276 \\
+24 & 64 & 0.001  & 0.01390 \\
+48 & 32 & 0.001  & 0.01410 \\
+24 & 32 & 0.001  & 0.01431 \\
+24 & 64 & 0.0005 & 0.01502 \\
+48 & 64 & 0.0005 & 0.01738 \\
+24 & 32 & 0.0005 & 0.01801 \\
+48 & 32 & 0.0005 & 0.01852 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Cấu hình có validation loss thấp nhất tuyệt đối là \texttt{window=48h, hidden=64, lr=0.001} (0.01276). Tuy nhiên, để tránh chọn một mô hình phức tạp/tốn chi phí tính toán hơn chỉ vì một khác biệt nhỏ không đáng kể, tiêu chí lựa chọn cuối cùng là: trong số các cấu hình có validation loss nằm trong khoảng 10\% so với giá trị tốt nhất, chọn cấu hình có chi phí tính toán thấp nhất (ước lượng bằng $\text{window\_size} \times \text{hidden\_size}$). Theo tiêu chí này, cấu hình được chọn là:
+
+\[
+\texttt{window\_size} = 24\text{h}, \quad \texttt{hidden\_size} = 64, \quad \texttt{learning\_rate} = 0.001
+\]
+
+Cửa sổ 24 giờ cũng phù hợp với phát hiện từ ACF (Hình~\ref{fig:acfpacf}): chu kỳ ngày là chu kỳ chi phối hành vi ngắn hạn của PM2.5, nên một cửa sổ dài hơn (48h) không mang lại cải thiện tương xứng với chi phí tính toán tăng thêm.
+
+\subsection{Huấn luyện mô hình cuối cùng}
+
+Với cấu hình đã chọn, mô hình được huấn luyện lại với ngân sách epoch lớn hơn (tối đa 25 epoch, patience$=5$) để hội tụ đầy đủ hơn.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{figures/learning_curve.png}
+\caption{Learning curve — GRU (window=24h, hidden=64)}
+\label{fig:learning_curve}
+\end{figure}
+
+Quá trình huấn luyện dừng sớm ở epoch 15 (val\_loss tốt nhất đạt được ở epoch 10, $\approx 0.0114$), cho thấy early stopping hoạt động hiệu quả trong việc ngăn mô hình overfit lên tập train sau khi đã hội tụ trên tập validation (Hình~\ref{fig:learning_curve}).
+
+\subsection{Đánh giá trên tập Test}
+
+Mô hình GRU được so sánh với hai baseline đơn giản: \textbf{Naive} (dự báo bằng giá trị giờ trước, $t-1$) và \textbf{Seasonal Naive} (dự báo bằng giá trị cùng giờ ngày hôm trước, $t-24$), trên cùng tập mốc thời gian của tập Test.
+
+\begin{table}[H]
+\centering
+\caption{So sánh hiệu năng trên tập Test (thang đo gốc, $\mu$g/m$^3$)}
+\begin{tabular}{lrr}
+\toprule
+Mô hình & MAE ($\mu$g/m$^3$) & RMSE ($\mu$g/m$^3$) \\
+\midrule
+Naive ($t-1$) & 1.323 & 2.341 \\
+Seasonal Naive ($t-24$) & 4.699 & 6.691 \\
+\textbf{GRU (window=24h)} & \textbf{1.172} & \textbf{2.173} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/prediction_test.png}
+\caption{PM2.5: Thực tế và Dự báo GRU trên tập Test}
+\label{fig:pred_test}
+\end{figure}
+
+Mô hình GRU vượt trội đáng kể so với Seasonal Naive (giảm $\sim$75\% MAE) và cải thiện $\sim$11.4\% MAE so với Naive — cho thấy mô hình đã học được nhiều hơn quy luật lặp lại đơn giản theo giờ hoặc theo ngày, mà còn nắm bắt được các phụ thuộc đa biến phức tạp hơn giữa PM2.5 và các chỉ số chất lượng không khí khác. Đáng chú ý, Seasonal Naive có hiệu năng kém hơn hẳn Naive thông thường — điều này phù hợp với đặc điểm chuỗi PM2.5 biến động khá nhanh trong ngày (không lặp lại y hệt theo chu kỳ 24h tuyệt đối), khiến việc chỉ đơn giản lặp lại giá trị "hôm qua cùng giờ" trở nên kém tin cậy hơn so với dùng giá trị ngay trước đó. Hình~\ref{fig:pred_test} cho thấy đường dự báo GRU (xanh lá) bám khá sát đường thực tế (cam), kể cả tại các đợt tăng đột biến.
+
+\subsection{Phân tích Residual}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/residual_test.png}
+\caption{Residual (Thực tế $-$ Dự báo) trên tập Test}
+\label{fig:resid_test}
+\end{figure}
+
+Residual trên tập Test có \textbf{mean $= 0.175\,\mu$g/m$^3$}, \textbf{std $= 2.166\,\mu$g/m$^3$} — mean gần 0 cho thấy mô hình không thiên lệch (bias) hệ thống theo một hướng cụ thể. Phân phối residual (Hình~\ref{fig:resid_test}) tập trung quanh 0, tuy vẫn còn một số giá trị residual lớn tương ứng với các thời điểm PM2.5 tăng đột biến khó dự báo — đây là hạn chế phổ biến của các mô hình dự báo chuỗi thời gian khi đối mặt với sự kiện hiếm/bất thường.
+
+% ==================== 6. ĐÁNH GIÁ OUT-OF-SAMPLE ====================
+\section{Đánh giá trên dữ liệu mới (Out-of-sample)}
+
+Một điểm mạnh trong thiết kế thực nghiệm của tiểu luận này là việc đánh giá mô hình không chỉ dừng lại ở tập Test (vốn vẫn nằm trong cùng khoảng thời gian thu thập dữ liệu ban đầu), mà còn được kiểm chứng trên một bộ dữ liệu \textbf{hoàn toàn mới}, được thu thập ở một thời điểm sau đó — mô phỏng sát tình huống triển khai thực tế khi mô hình phải dự báo cho dữ liệu chưa từng "nhìn thấy" trong suốt quá trình phát triển.
+
+\subsection{Thu thập và xử lý dữ liệu mới}
+
+Bộ dữ liệu mới (\texttt{new\_data.csv}) gồm \textbf{696 dòng}, từ \texttt{2026-07-27 00:00} đến \texttt{2026-08-24 23:00} (29 ngày), được thu thập từ cùng nguồn Open-Meteo API tại cùng vị trí. Dữ liệu được làm sạch và tiền xử lý theo đúng quy trình đã áp dụng ở Mục~2--3 (cùng scaler đã fit trên tập Train trước đó — \textbf{không fit lại} để đảm bảo tính nhất quán và tránh leakage). Để có đủ ngữ cảnh (context) cho các điểm dự báo đầu tiên của dữ liệu mới, 24 giờ cuối của tập Test được nối thêm vào trước dữ liệu mới làm phần lịch sử — toàn bộ phần ngữ cảnh này đều là dữ liệu \textit{quá khứ} so với từng điểm cần dự báo, nên không phát sinh rò rỉ dữ liệu.
+
+\subsection{Kết quả dự báo}
+
+\begin{table}[H]
+\centering
+\caption{So sánh hiệu năng trên dữ liệu mới (out-of-sample, $\mu$g/m$^3$)}
+\begin{tabular}{lrr}
+\toprule
+Mô hình & MAE ($\mu$g/m$^3$) & RMSE ($\mu$g/m$^3$) \\
+\midrule
+Naive ($t-1$) & 0.857 & 1.428 \\
+\textbf{GRU (window=24h)} & \textbf{0.769} & \textbf{1.366} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/prediction_newdata.png}
+\caption{PM2.5: Thực tế và Dự báo GRU trên dữ liệu mới}
+\label{fig:pred_new}
+\end{figure}
+
+Mô hình GRU tiếp tục vượt trội hơn baseline Naive trên dữ liệu hoàn toàn mới, với MAE giảm $\sim$10.3\%. Đáng chú ý, sai số tuyệt đối trên dữ liệu mới (MAE $=0.769$) thấp hơn cả sai số trên tập Test (MAE $=1.172$) — điều này phù hợp với thực tế nồng độ PM2.5 trong giai đoạn cuối tháng 7 -- tháng 8/2026 (mùa mưa tại khu vực Nam Trung Bộ) nhìn chung thấp và ít biến động đột biến hơn giai đoạn tập Test, khiến bài toán dự báo trở nên "dễ" hơn tương đối trong giai đoạn này.
+
+\subsection{Phân tích Residual trên dữ liệu mới}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/residual_newdata.png}
+\caption{Residual (Thực tế $-$ Dự báo) trên dữ liệu mới}
+\label{fig:resid_new}
+\end{figure}
+
+Residual trên dữ liệu mới có \textbf{mean $= 0.013\,\mu$g/m$^3$} (gần như bằng 0) và \textbf{std $= 1.366\,\mu$g/m$^3$} — thấp hơn cả độ lệch chuẩn residual trên tập Test, củng cố kết luận rằng mô hình duy trì được khả năng tổng quát hóa tốt khi triển khai trên dữ liệu thực sự mới, không có dấu hiệu suy giảm hiệu năng (model drift) đáng kể trong giai đoạn quan sát.
+
+% ==================== 7. KẾT LUẬN ====================
+\section{Kết luận}
+
+Trong tiểu luận này, bài toán dự báo nồng độ PM2.5 theo chuỗi thời gian tại thành phố Quy Nhơn đã được xây dựng và đánh giá thông qua mô hình mạng GRU. Quy trình thực hiện đầy đủ các bước: làm sạch dữ liệu, phân tích khám phá chuyên biệt cho chuỗi thời gian (kiểm định tính dừng ADF/KPSS, xu hướng Mann-Kendall, tính chu kỳ qua ACF/PACF/Periodogram/Decomposition), tiền xử lý và feature engineering, tinh chỉnh siêu tham số bằng Grid Search, và đánh giá mô hình.
+
+Kết quả cho thấy mô hình GRU (window=24h, hidden\_size=64) vượt trội rõ rệt so với các baseline đơn giản (Naive, Seasonal Naive) trên tập Test, đạt MAE $=1.172\,\mu$g/m$^3$ (giảm $\sim$11\% so với Naive và $\sim$75\% so với Seasonal Naive). Đặc biệt, khi kiểm chứng trên một bộ dữ liệu hoàn toàn mới được thu thập ở giai đoạn sau đó, mô hình vẫn duy trì được lợi thế so với baseline (MAE $=0.769\,\mu$g/m$^3$, giảm $\sim$10\% so với Naive), với residual gần như không thiên lệch — chứng tỏ khả năng tổng quát hóa của mô hình không chỉ dừng lại ở một tập hold-out tĩnh mà còn giữ vững khi đối mặt với dữ liệu thực sự chưa từng biết trước.
+
+Bên cạnh những kết quả tích cực, tiểu luận còn một số hạn chế: (1) dữ liệu chỉ trải dài khoảng 4 năm, giới hạn khả năng học đầy đủ chu kỳ năm mà Periodogram đã chỉ ra là chu kỳ chiếm ưu thế; (2) mô hình hiện chỉ dự báo một bước duy nhất (horizon $=1$ giờ), chưa mở rộng sang dự báo nhiều bước (multi-step forecasting); (3) kiến trúc GRU đơn biến thể là kiến trúc duy nhất được thử nghiệm, chưa so sánh với các kiến trúc học sâu khác (LSTM, Temporal Convolutional Network, Transformer) hay các biến thể hàm mất mát khác.
+
+Hướng phát triển tiếp theo có thể tập trung vào: mở rộng horizon dự báo nhiều bước, bổ sung các đặc trưng ngoại sinh (dự báo thời tiết), và thử nghiệm các kiến trúc/hàm mất mát khác để đánh giá khả năng cải thiện thêm hiệu năng mô hình.
+
+% ==================== TÀI LIỆU THAM KHẢO ====================
+\section*{Tài liệu tham khảo}
+\addcontentsline{toc}{section}{Tài liệu tham khảo}
+
+\textit{(Danh sách tài liệu tham khảo sẽ được bổ sung.)}
+
+\end{document}
