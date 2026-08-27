@@ -24,6 +24,9 @@
   opnode/.style={draw, circle, minimum size=0.42cm, inner sep=0pt, font=\footnotesize},
   dotn/.style={draw, circle, fill=black, minimum size=2.5pt, inner sep=0pt},
   cline/.style={-{Latex[length=2mm]}, thick},
+  realcell/.style={draw, minimum width=0.8cm, minimum height=0.7cm, fill=blue!20, font=\scriptsize},
+  predcell/.style={draw, minimum width=0.8cm, minimum height=0.7cm, fill=orange!35, font=\scriptsize},
+  grubox/.style={draw, rounded corners=2pt, minimum width=1.1cm, minimum height=0.7cm, fill=green!15, font=\small},
 }
 
 \begin{document}
@@ -105,10 +108,10 @@ Trên cơ sở đó, báo cáo sẽ trình bày lần lượt quá trình chuẩ
 Khác với các bài toán học có giám sát thông thường, dữ liệu chuỗi thời gian có tính tuần tự: giá trị tại thời điểm $t$ có quan hệ phụ thuộc với các giá trị trong quá khứ. Cách tiếp cận phổ biến để chuyển bài toán dự báo chuỗi thời gian thành bài toán học có giám sát là kỹ thuật \textbf{sliding window}: với một cửa sổ quan sát độ dài $w$ (window size) và một khoảng dự báo $h$ (horizon), ta xây dựng cặp dữ liệu
 
 \[
-X_t = (x_{t-w+1}, x_{t-w+2}, \dots, x_t) \quad \longrightarrow \quad y_t = \text{PM2.5}_{t+h}
+X_t = (x_{t-w+1}, x_{t-w+2}, \dots, x_t) \quad \longrightarrow \quad y_t
 \]
 
-trong đó $x_i \in \mathbb{R}^n$ là vector $n$ đặc trưng tại thời điểm $i$ (bao gồm PM2.5 và các chỉ số liên quan). Trong tiểu luận này, $h = 1$ (dự báo 1 giờ tới) và $w$ được xác định thông qua tinh chỉnh siêu tham số ở Mục~2.4.
+trong đó $x_i \in \mathbb{R}^n$ là vector $n$ đặc trưng tại thời điểm $i$, còn $y_t$ là giá trị của biến mục tiêu (biến cần dự báo) tại bước thời gian $t+h$ trong tương lai.
 
 Phần còn lại của mục này trình bày cơ sở lý thuyết của các kiến trúc mạng nơ-ron hồi quy theo trình tự \textbf{RNN $\to$ LSTM $\to$ GRU}: xuất phát từ RNN nguyên bản và hạn chế của nó, đến LSTM như một giải pháp đầy đủ, và cuối cùng là GRU — kiến trúc trọng tâm được sử dụng trong tiểu luận — như một phiên bản đơn giản hóa của LSTM.
 
@@ -259,7 +262,7 @@ GRU (Cho và cộng sự, 2014) là một biến thể \textbf{đơn giản hóa
     \item \textbf{Loại bỏ cell state riêng biệt}: GRU chỉ có một trạng thái ẩn $h_t$ duy nhất, vừa đóng vai trò "bộ nhớ dài hạn" (tương tự $C_t$ của LSTM) vừa là đầu ra tại mỗi bước — không cần cổng ra $o_t$ và phép biến đổi $\tanh(C_t)$ riêng như LSTM.
 \end{itemize}
 
-Đây chính là kiến trúc \textbf{trọng tâm} được sử dụng để xây dựng mô hình dự báo PM2.5 trong tiểu luận này. Tại mỗi bước thời gian $t$, với đầu vào $x_t$ và trạng thái ẩn trước đó $h_{t-1}$, GRU tính toán như sau:
+Tại mỗi bước thời gian $t$, với đầu vào $x_t$ và trạng thái ẩn trước đó $h_{t-1}$, GRU tính toán như sau:
 
 \textbf{Cổng đặt lại (Reset gate)} — quyết định mức độ "quên" thông tin quá khứ khi tính trạng thái ứng viên:
 \begin{equation}
@@ -334,24 +337,116 @@ Trong đó $\sigma(\cdot)$ là hàm sigmoid, $\odot$ là phép nhân theo từng
 
 Hình~\ref{fig:gru} minh họa GRU: không còn đường cell state riêng như LSTM, trạng thái ẩn $h_{t-1}$ vừa đi thẳng vào phép nội suy $(1-z_t)\odot h_{t-1}$ (đường trên), vừa được điều tiết bởi cổng đặt lại $r_t$ trước khi tham gia tính trạng thái ứng viên $\tilde{h}_t$ (đường dưới). Khi $z_t \to 0$, trạng thái ẩn gần như được giữ nguyên qua bước thời gian — cơ chế then chốt giúp GRU giảm thiểu vanishing gradient tương tự cell state của LSTM; khi $z_t \to 1$, trạng thái được thay gần như hoàn toàn bằng trạng thái ứng viên mới.
 
-Với bài toán dự báo hồi quy (không phải phân loại), đầu ra cuối cùng của mô hình là trạng thái ẩn tại bước thời gian cuối của chuỗi, đưa qua một lớp fully-connected tuyến tính để cho ra giá trị PM2.5 dự báo:
+Với bài toán dự báo hồi quy (không phải phân loại) tại một horizon $h$ cố định, cho trước ($h \geq 1$ là số bước thời gian cần dự báo trước, được chọn trước khi huấn luyện), đầu ra cuối cùng của mô hình là trạng thái ẩn tại bước thời gian cuối của cửa sổ đầu vào, đưa qua một lớp fully-connected tuyến tính để cho ra giá trị dự báo của biến mục tiêu tại bước $t+h$:
 \begin{equation}
-\hat{y}_t = W_{fc}\, h_{w} + b_{fc}
+\hat{y}_{t+h} = W_{fc}\, h_{w} + b_{fc}
 \end{equation}
-với $h_w$ là trạng thái ẩn tại bước cuối cùng ($w$) của cửa sổ đầu vào.
+với $h_w$ là trạng thái ẩn tại bước cuối cùng ($w$) của cửa sổ đầu vào. Horizon $h$ ở đây là một \textbf{siêu tham số kiến trúc}: mỗi model chỉ được huấn luyện để dự báo đúng một giá trị $h$ duy nhất — muốn đổi sang horizon khác phải huấn luyện lại từ đầu.
 
-Nhờ số tham số ít hơn LSTM (không cần cổng ra và cell state riêng) trong khi vẫn giữ được khả năng nắm bắt phụ thuộc dài hạn tương đương trong nhiều bài toán thực nghiệm, GRU được lựa chọn cho bài toán dự báo PM2.5 với chuỗi dữ liệu có độ dài vừa phải (khoảng 35 nghìn điểm) — nơi tốc độ huấn luyện nhanh hơn có lợi thế rõ rệt khi cần chạy Grid Search nhiều cấu hình (Mục~2.4) mà không đánh đổi đáng kể về chất lượng mô hình.
+Trong thực tế, nhiều bài toán cần dự báo \textbf{đồng thời nhiều horizon khác nhau} (chẳng hạn cả $1, 2, \dots, H$ bước tới cùng lúc), thay vì chỉ một $h$ duy nhất như kiến trúc cơ sở ở trên. Hai chiến lược phổ biến để mở rộng một model một-horizon sang dự báo $H$ bước tương lai được trình bày dưới đây.
 
-\section{Hàm mất mát và quá trình huấn luyện}
+\subsection*{Recursive GRU}
 
-Hàm mất mát được sử dụng là \textbf{Mean Absolute Error (MAE, hay L1 Loss)}:
+Cách đơn giản nhất để dự báo nhiều bước mà \textbf{không cần huấn luyện lại} là tái sử dụng nguyên một model đã huấn luyện sẵn cho horizon $h=1$ (kiến trúc ở trên với $h=1$) — bắt buộc phải là $h=1$ vì đây là đơn vị bước nhỏ nhất, mỗi lần gọi model chỉ trượt cửa sổ đi đúng 1 bước, nhờ đó có thể gọi lặp lại $H$ lần liên tiếp để đi xa dần — gọi là chiến lược \textbf{Recursive (đệ quy)}.
+
+Tại bước thứ $k$ ($k = 1, \dots, H$), model nhận cửa sổ $w$ giờ gần nhất và cho ra dự đoán:
 \begin{equation}
-\mathcal{L} = \frac{1}{N}\sum_{i=1}^{N} |y_i - \hat{y}_i|
+\hat{y}_{t+k} = f_\theta\big(\tilde{x}_{t-w+k}, \dots, \tilde{x}_{t-1+k}\big)
+\end{equation}
+trong đó $f_\theta$ là model GRU horizon=1 đã huấn luyện, và $\tilde{x}_i$ là vector đặc trưng "tổng hợp" tại thời điểm $i$: nếu $i \leq t$ (đã có dữ liệu thật) thì $\tilde{x}_i = x_i$; nếu $i > t$ (thuộc tương lai, chưa quan trắc) thì thành phần mục tiêu (biến cần dự báo) của $\tilde{x}_i$ được thay bằng chính giá trị model \textbf{vừa dự đoán} ở bước trước đó ($\hat{y}_i$), còn các thành phần đặc trưng ngoại sinh khác thường dùng \textbf{persistence} — giữ nguyên giá trị thật cuối cùng đã biết, do chưa có dự báo riêng cho chúng — trừ những đặc trưng có thể tính \textbf{chính xác} cho tương lai (ví dụ đặc trưng thời gian dạng chu kỳ, vốn là hàm xác định, không cần dự báo).
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[>=Latex, x=1cm, y=1cm]
+  \node[realcell] at (0,4.3) {};
+  \node[right, font=\scriptsize] at (0.5,4.3) {Dữ liệu thật};
+  \node[predcell] at (3.2,4.3) {};
+  \node[right, font=\scriptsize] at (3.7,4.3) {Model tự dự đoán};
+
+  \node[font=\small\bfseries] at (-2.3,3) {Bước 1};
+  \foreach \i in {0,1,2,3} {
+    \node[realcell] (a\i) at (\i*0.9,3) {};
+  }
+  \node[grubox] (g1) at (4.6,3) {GRU};
+  \draw[cline] (a3.east) -- (g1.west);
+  \draw[cline] (g1.east) -- ++(0.9,0) node[predcell,right=0.05cm,font=\scriptsize] (p1) {$\hat y_{w+1}$};
+
+  \node[font=\small\bfseries] at (-2.3,1.6) {Bước 2};
+  \foreach \i in {0,1,2} {
+    \node[realcell] (b\i) at (\i*0.9,1.6) {};
+  }
+  \node[predcell] (b3) at (2.7,1.6) {$\hat y_{w+1}$};
+  \node[grubox] (g2) at (4.6,1.6) {GRU};
+  \draw[cline] (b3.east) -- (g2.west);
+  \draw[cline] (g2.east) -- ++(0.9,0) node[predcell,right=0.05cm,font=\scriptsize] (p2) {$\hat y_{w+2}$};
+
+  \node[font=\small\bfseries] at (-2.3,0.2) {Bước 3};
+  \node[realcell] (c0) at (0,0.2) {};
+  \node[realcell] (c1) at (0.9,0.2) {};
+  \node[predcell] (c2) at (1.8,0.2) {$\hat y_{w+1}$};
+  \node[predcell] (c3) at (2.7,0.2) {$\hat y_{w+2}$};
+  \node[grubox] (g3) at (4.6,0.2) {GRU};
+  \draw[cline] (c3.east) -- (g3.west);
+  \draw[cline] (g3.east) -- ++(0.9,0) node[predcell,right=0.05cm,font=\scriptsize] (p3) {$\hat y_{w+3}$};
+
+  \draw[-{Latex[length=1.5mm]}, gray, dashed] (p1.south) to[out=-90,in=90] (b3.north);
+  \draw[-{Latex[length=1.5mm]}, gray, dashed] (p2.south) to[out=-90,in=90] (c3.north);
+\end{tikzpicture}
+\caption{Recursive GRU: cửa sổ trượt, phần dự đoán ở bước trước bị đưa ngược vào làm input cho bước sau}
+\label{fig:recursive}
+\end{figure}
+
+Hình~\ref{fig:recursive} minh họa cơ chế này qua 3 bước đầu tiên: ở Bước 1, cửa sổ input hoàn toàn là dữ liệu thật; sang Bước 2, giá trị $\hat{y}_{w+1}$ vừa sinh ra ở Bước 1 được "trượt" vào cửa sổ, thay thế cho phần dữ liệu thật cũ nhất bị loại ra; đến Bước 3, cửa sổ đã chứa 2 giá trị tự dự đoán. Càng dự đoán xa, tỷ lệ dữ liệu thật trong cửa sổ càng giảm, dần được thay thế bởi chính dự đoán của model.
+
+\textbf{Ưu điểm}: không cần huấn luyện model mới, tận dụng nguyên vẹn model horizon=1 đã có sẵn.
+
+\textbf{Nhược điểm}: vì $\hat{y}_{t+k}$ phụ thuộc vào các dự đoán $\hat{y}_{t+1}, \dots, \hat{y}_{t+k-1}$ ở những bước trước (thay vì dữ liệu thật), sai số của mỗi bước sẽ \textbf{dồn tích} (error compounding) qua các bước tiếp theo — bước dự đoán càng xa mốc gốc, độ tin cậy càng giảm nhanh. Ngoài ra, giả định persistence cho các đặc trưng ngoại sinh cũng là một nguồn sai lệch bổ sung nếu các đặc trưng này thực sự biến động trong giai đoạn dự báo.
+
+\subsection*{Direct GRU (Vector Output)}
+
+Chiến lược thứ hai giải quyết trực tiếp vấn đề dồn sai số của Recursive: thay vì tái sử dụng model horizon=1, \textbf{huấn luyện một model mới} dự đoán \textbf{toàn bộ $H$ bước tương lai cùng lúc} trong một lần forward pass duy nhất.
+
+Kiến trúc Encoder GRU được giữ nguyên như đã trình bày ở trên (đọc cửa sổ $w$ giờ lịch sử, nén thành trạng thái ẩn cuối $h_w$), chỉ thay đổi duy nhất lớp fully-connected: thay vì $\text{Linear}(\text{hidden}, 1)$ chỉ ra một số, dùng $\text{Linear}(\text{hidden}, H)$ để ra thẳng $H$ giá trị cùng lúc:
+\begin{equation}
+[\hat{y}_{t+1}, \hat{y}_{t+2}, \dots, \hat{y}_{t+H}]^\top = W_{fc}\, h_w + b_{fc}, \qquad W_{fc} \in \mathbb{R}^{H \times \text{hidden}}
 \end{equation}
 
-MAE được chọn thay vì MSE (Mean Squared Error) vì hai lý do: (1) MAE khớp trực tiếp với chỉ số đánh giá cuối cùng của mô hình, và (2) MAE ít bị chi phối bởi các giá trị ngoại lai (outlier) hơn — điều quan trọng với dữ liệu PM2.5 vốn có các đợt tăng đột biến (spike) do các sự kiện ô nhiễm bất thường.
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[>=Latex, x=1cm, y=1cm]
+  \foreach \i in {0,1,2,3} {
+    \node[realcell] (a\i) at (\i*0.9,0) {};
+  }
+  \node[font=\scriptsize] at (1.35,-0.6) {Cửa sổ input (toàn bộ dữ liệu thật)};
 
-Quá trình huấn luyện sử dụng thuật toán tối ưu \textbf{Adam}, kết hợp kỹ thuật \textbf{Early Stopping}: huấn luyện dừng lại nếu validation loss không cải thiện sau một số epoch liên tiếp (patience), và trọng số của epoch có validation loss thấp nhất được giữ lại làm mô hình cuối cùng — giúp tránh overfitting.
+  \node[grubox, minimum width=1.6cm, minimum height=1cm] (enc) at (5.2,0) {Encoder GRU};
+  \draw[cline] (a3.east) -- (enc.west);
+
+  \node[opnode, minimum size=0.5cm] (hw) at (7.3,0) {$h_w$};
+  \draw[cline] (enc.east) -- (hw.west);
+
+  \node[gatebox, fill=violet!15, minimum width=1.4cm] (fc) at (9.4,0) {Linear};
+  \draw[cline] (hw.east) -- (fc.west);
+
+  \node[predcell] (o1) at (11.6,1.65) {$\hat y_{w+1}$};
+  \node[predcell] (o2) at (11.6,0.55) {$\hat y_{w+2}$};
+  \node[font=\small] (odots) at (11.6,-0.55) {$\vdots$};
+  \node[predcell] (oH) at (11.6,-1.65) {$\hat y_{w+H}$};
+  \foreach \o in {o1,o2,oH} {
+    \draw[cline] (fc.east) -- (\o.west);
+  }
+
+  \node[font=\scriptsize] at (9.4,-2.6) {1 lần forward pass duy nhất};
+\end{tikzpicture}
+\caption{Direct GRU: một Encoder duy nhất, output rộng ra thẳng cả $H$ bước cùng lúc, không đệ quy}
+\label{fig:direct}
+\end{figure}
+
+Hình~\ref{fig:direct} cho thấy điểm khác biệt cốt lõi so với Recursive: cửa sổ input \textbf{luôn là dữ liệu thật 100\%} — không có bước dự đoán nào bị đưa ngược lại làm input cho bước khác. Toàn bộ $H$ dự đoán đều được tính \textbf{độc lập với nhau}, xuất phát từ cùng một ngữ cảnh $h_w$ duy nhất.
+
+\textbf{Ưu điểm}: vì không có cơ chế đệ quy, Direct GRU \textbf{không bị dồn sai số} qua các bước horizon — sai số ở bước dự đoán xa không phụ thuộc vào sai số ở bước gần.
+
+\textbf{Nhược điểm}: model phải học đồng thời $H$ mục tiêu khác nhau trong cùng một mạng (đa nhiệm), có thể đánh đổi đôi chút độ chính xác ở bước dự đoán gần nhất ($h=1$) so với một model được huấn luyện chuyên biệt chỉ cho horizon=1 duy nhất; đồng thời cần huấn luyện lại từ đầu, không tái sử dụng được model horizon=1 sẵn có như Recursive.
 
 % ==================== CHƯƠNG 2: ỨNG DỤNG ====================
 \chapter{Ứng dụng}
@@ -378,6 +473,7 @@ Các biến trong bộ dữ liệu sau khi chuẩn hóa tên cột:
 \begin{table}[H]
 \centering
 \caption{Thống kê mô tả các biến định lượng}
+\label{tab:describe}
 \begin{tabular}{lrrrrrr}
 \toprule
 Biến & Đơn vị & Mean & Std & Min & Median & Max \\
@@ -624,17 +720,15 @@ Quá trình huấn luyện dừng sớm ở epoch 15 (val\_loss tốt nhất đ�
 
 \subsection*{Đánh giá trên tập Test}
 
-Mô hình GRU được so sánh với hai baseline đơn giản: \textbf{Naive} (dự báo bằng giá trị giờ trước, $t-1$) và \textbf{Seasonal Naive} (dự báo bằng giá trị cùng giờ ngày hôm trước, $t-24$), trên cùng tập mốc thời gian của tập Test.
+Mô hình GRU (window=24h, hidden\_size=64) được đánh giá trên toàn bộ tập Test bằng hai chỉ số MAE và RMSE (thang đo gốc, $\mu$g/m$^3$).
 
 \begin{table}[H]
 \centering
-\caption{So sánh hiệu năng trên tập Test (thang đo gốc, $\mu$g/m$^3$)}
+\caption{Hiệu năng mô hình GRU trên tập Test (thang đo gốc, $\mu$g/m$^3$)}
 \begin{tabular}{lrr}
 \toprule
 Mô hình & MAE ($\mu$g/m$^3$) & RMSE ($\mu$g/m$^3$) \\
 \midrule
-Naive ($t-1$) & 1.323 & 2.341 \\
-Seasonal Naive ($t-24$) & 4.699 & 6.691 \\
 \textbf{GRU (window=24h)} & \textbf{1.172} & \textbf{2.173} \\
 \bottomrule
 \end{tabular}
@@ -647,7 +741,7 @@ Seasonal Naive ($t-24$) & 4.699 & 6.691 \\
 \label{fig:pred_test}
 \end{figure}
 
-Mô hình GRU vượt trội đáng kể so với Seasonal Naive (giảm $\sim$75\% MAE) và cải thiện $\sim$11.4\% MAE so với Naive — cho thấy mô hình đã học được nhiều hơn quy luật lặp lại đơn giản theo giờ hoặc theo ngày, mà còn nắm bắt được các phụ thuộc đa biến phức tạp hơn giữa PM2.5 và các chỉ số chất lượng không khí khác. Đáng chú ý, Seasonal Naive có hiệu năng kém hơn hẳn Naive thông thường — điều này phù hợp với đặc điểm chuỗi PM2.5 biến động khá nhanh trong ngày (không lặp lại y hệt theo chu kỳ 24h tuyệt đối), khiến việc chỉ đơn giản lặp lại giá trị "hôm qua cùng giờ" trở nên kém tin cậy hơn so với dùng giá trị ngay trước đó. Hình~\ref{fig:pred_test} cho thấy đường dự báo GRU (xanh lá) bám khá sát đường thực tế (cam), kể cả tại các đợt tăng đột biến.
+Với MAE $=1.172\,\mu$g/m$^3$ trên thang đo gốc — chỉ tương đương khoảng $8.5\%$ so với giá trị trung bình PM2.5 của toàn bộ dữ liệu ($13.73\,\mu$g/m$^3$, xem Bảng~\ref{tab:describe}) — mô hình cho sai số tương đối nhỏ. Hình~\ref{fig:pred_test} cho thấy đường dự báo GRU (xanh lá) bám khá sát đường thực tế (cam) trên toàn bộ tập Test, kể cả tại các đợt tăng đột biến.
 
 \subsection*{Phân tích Residual}
 
@@ -673,12 +767,11 @@ Bộ dữ liệu mới (\texttt{new\_data.csv}) gồm \textbf{696 dòng}, từ \
 
 \begin{table}[H]
 \centering
-\caption{So sánh hiệu năng trên dữ liệu mới (out-of-sample, $\mu$g/m$^3$)}
+\caption{Hiệu năng mô hình GRU trên dữ liệu mới (out-of-sample, $\mu$g/m$^3$)}
 \begin{tabular}{lrr}
 \toprule
 Mô hình & MAE ($\mu$g/m$^3$) & RMSE ($\mu$g/m$^3$) \\
 \midrule
-Naive ($t-1$) & 0.857 & 1.428 \\
 \textbf{GRU (window=24h)} & \textbf{0.769} & \textbf{1.366} \\
 \bottomrule
 \end{tabular}
@@ -691,7 +784,7 @@ Naive ($t-1$) & 0.857 & 1.428 \\
 \label{fig:pred_new}
 \end{figure}
 
-Mô hình GRU tiếp tục vượt trội hơn baseline Naive trên dữ liệu hoàn toàn mới, với MAE giảm $\sim$10.3\%. Đáng chú ý, sai số tuyệt đối trên dữ liệu mới (MAE $=0.769$) thấp hơn cả sai số trên tập Test (MAE $=1.172$) — điều này phù hợp với thực tế nồng độ PM2.5 trong giai đoạn cuối tháng 7 -- tháng 8/2026 (mùa mưa tại khu vực Nam Trung Bộ) nhìn chung thấp và ít biến động đột biến hơn giai đoạn tập Test, khiến bài toán dự báo trở nên "dễ" hơn tương đối trong giai đoạn này.
+Đáng chú ý, sai số tuyệt đối trên dữ liệu mới (MAE $=0.769\,\mu$g/m$^3$) thấp hơn cả sai số trên tập Test (MAE $=1.172\,\mu$g/m$^3$) — điều này phù hợp với thực tế nồng độ PM2.5 trong giai đoạn cuối tháng 7 -- tháng 8/2026 (mùa mưa tại khu vực Nam Trung Bộ) nhìn chung thấp và ít biến động đột biến hơn giai đoạn tập Test, khiến bài toán dự báo trở nên "dễ" hơn tương đối trong giai đoạn này.
 
 \subsection*{Phân tích Residual trên dữ liệu mới}
 
@@ -706,16 +799,77 @@ Mô hình GRU tiếp tục vượt trội hơn baseline Naive trên dữ liệu 
 Residual trên dữ liệu mới có \textbf{mean $= 0.013\,\mu$g/m$^3$} (gần như bằng 0) và \textbf{std $= 1.366\,\mu$g/m$^3$} — thấp hơn cả độ lệch chuẩn residual trên tập Test, củng cố kết luận rằng mô hình duy trì được khả năng tổng quát hóa tốt khi triển khai trên dữ liệu thực sự mới, không có dấu hiệu suy giảm hiệu năng (model drift) đáng kể trong giai đoạn quan sát.
 \end{sloppypar}
 
-% ==================== 2.6 KẾT LUẬN ====================
+% ==================== 2.6 MULTI-STEP FORECASTING ====================
+\section{Mở rộng: Dự báo đa bước (Multi-step Forecasting)}
+
+Mô hình ở Mục~2.4 chỉ dự báo được đúng \textbf{1 giờ tới} (horizon $h=1$) — như đã phân tích ở Mục~1.4, đây gần như chỉ mang tính "nowcasting", chưa đủ lead time để cảnh báo/hành động trước. Phần này thử nghiệm mở rộng sang dự báo \textbf{$H=6$ giờ tới}, áp dụng đúng hai chiến lược đã trình bày lý thuyết ở Mục~1.4: \textbf{Recursive GRU} và \textbf{Direct GRU}.
+
+\subsection*{Recursive GRU: tái sử dụng model horizon=1}
+
+Tái sử dụng nguyên model GRU (window=24h, hidden\_size=64) đã huấn luyện ở Mục~2.4 — \textbf{không huấn luyện lại}. Model được gọi lặp lại 6 lần theo đúng cơ chế đã mô tả ở Hình~\ref{fig:recursive}: PM2.5 dự đoán ở bước trước được đưa ngược vào cửa sổ cho bước sau, các đặc trưng ngoại sinh dùng persistence, đặc trưng lịch tính chính xác cho từng giờ tương lai.
+
+\subsection*{Direct GRU: Grid Search và huấn luyện riêng}
+
+Vì Direct GRU là một model hoàn toàn mới (đổi lớp fully-connected cuối thành $\text{Linear}(\text{hidden}, 6)$ — xem Hình~\ref{fig:direct}), một Grid Search riêng được thực hiện trên cùng không gian siêu tham số đã dùng ở Mục~2.4.2 (\texttt{window\_size} $\in \{24, 48\}$, \texttt{hidden\_size} $\in \{32, 64\}$, \texttt{learning\_rate} $\in \{0.001, 0.0005\}$), theo cùng tiêu chí chọn cấu hình (10\% dung sai + chi phí tính toán thấp nhất). Cấu hình được chọn là \texttt{window\_size=24h, hidden\_size=32, learning\_rate=0.001} — nhẹ hơn model horizon=1 gốc (hidden\_size=32 thay vì 64).
+
+\subsection*{So sánh trên tập Test}
+
+\begin{table}[H]
+\centering
+\caption{So sánh MAE/RMSE giữa Recursive GRU và Direct GRU theo từng bước horizon (5.201 mốc gốc chung)}
+\begin{tabular}{rrrrrr}
+\toprule
+Horizon $h$ & Recursive MAE & Direct MAE & Recursive RMSE & Direct RMSE & Direct tốt hơn (\%) \\
+\midrule
+1 & 1.172 & 1.210 & 2.174 & 2.182 & $-3.2$ \\
+2 & 2.140 & 1.951 & 3.483 & 3.198 & $8.8$ \\
+3 & 2.988 & 2.576 & 4.613 & 3.972 & $13.8$ \\
+4 & 3.715 & 3.029 & 5.576 & 4.511 & $18.5$ \\
+5 & 4.341 & 3.401 & 6.383 & 4.956 & $21.7$ \\
+6 & 4.880 & 3.683 & 7.075 & 5.274 & $24.5$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/multistep_comparison.png}
+\caption{MAE và RMSE của Recursive GRU và Direct GRU theo từng bước horizon}
+\label{fig:ms_comparison}
+\end{figure}
+
+Hình~\ref{fig:ms_comparison} cho thấy rõ hiện tượng \textbf{dồn sai số} (error compounding) của Recursive GRU đã dự đoán ở Mục~1.4: ở $h=1$, Recursive thậm chí nhỉnh hơn Direct một chút ($-3.2\%$, vì đây chính xác là model chuyên biệt horizon=1 đã được Grid Search kỹ ở Mục~2.4). Nhưng từ $h=2$ trở đi, Direct GRU vượt trội rõ rệt và khoảng cách ngày càng giãn ra — đến $h=6$, Direct tốt hơn Recursive tới $24.5\%$ về MAE.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/multistep_example.png}
+\caption{Ví dụ minh họa dự báo 6 giờ tới từ một điểm gốc cụ thể trong tập Test}
+\label{fig:ms_example}
+\end{figure}
+
+\subsection*{Phân tích Residual}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/multistep_residual.png}
+\caption{Phân phối và diễn biến Residual của Recursive GRU và Direct GRU tại $h=1$ và $h=6$}
+\label{fig:ms_residual}
+\end{figure}
+
+Tại $h=1$, độ lệch chuẩn residual của hai model gần tương đương nhau (Recursive: mean$=0.175$, std$=2.167\,\mu$g/m$^3$; Direct: mean$=-0.042$, std$=2.181\,\mu$g/m$^3$). Nhưng tại $h=6$, độ phân tán của Recursive tăng nhanh hơn hẳn (std$=7.046\,\mu$g/m$^3$) so với Direct (std$=5.265\,\mu$g/m$^3$) — Hình~\ref{fig:ms_residual} cho thấy trực quan phân phối residual của Recursive bị "loe" rộng hơn đáng kể ở $h=6$, xác nhận bằng thực nghiệm cơ chế dồn sai số đã lý giải bằng lý thuyết ở Mục~1.4.
+
+% ==================== 2.7 KẾT LUẬN ====================
 \section{Kết luận}
 
 Trong tiểu luận này, bài toán dự báo nồng độ PM2.5 theo chuỗi thời gian tại thành phố Quy Nhơn đã được xây dựng và đánh giá thông qua mô hình mạng GRU. Quy trình thực hiện đầy đủ các bước: làm sạch dữ liệu, phân tích khám phá chuyên biệt cho chuỗi thời gian (kiểm định tính dừng ADF/KPSS, xu hướng Mann-Kendall, tính chu kỳ qua ACF/PACF/Periodogram/Decomposition), tiền xử lý và feature engineering, tinh chỉnh siêu tham số bằng Grid Search, và đánh giá mô hình.
 
-Kết quả cho thấy mô hình GRU (window=24h, hidden\_size=64) vượt trội rõ rệt so với các baseline đơn giản (Naive, Seasonal Naive) trên tập Test, đạt MAE $=1.172\,\mu$g/m$^3$ (giảm $\sim$11\% so với Naive và $\sim$75\% so với Seasonal Naive). Đặc biệt, khi kiểm chứng trên một bộ dữ liệu hoàn toàn mới được thu thập ở giai đoạn sau đó, mô hình vẫn duy trì được lợi thế so với baseline (MAE $=0.769\,\mu$g/m$^3$, giảm $\sim$10\% so với Naive), với residual gần như không thiên lệch — chứng tỏ khả năng tổng quát hóa của mô hình không chỉ dừng lại ở một tập hold-out tĩnh mà còn giữ vững khi đối mặt với dữ liệu thực sự chưa từng biết trước.
+Kết quả cho thấy mô hình GRU (window=24h, hidden\_size=64) đạt MAE $=1.172\,\mu$g/m$^3$ trên tập Test — tương đương khoảng $8.5\%$ so với giá trị trung bình PM2.5 của toàn bộ dữ liệu. Đặc biệt, khi kiểm chứng trên một bộ dữ liệu hoàn toàn mới được thu thập ở giai đoạn sau đó, mô hình vẫn duy trì hiệu năng tốt (MAE $=0.769\,\mu$g/m$^3$), với residual gần như không thiên lệch — chứng tỏ khả năng tổng quát hóa của mô hình không chỉ dừng lại ở một tập hold-out tĩnh mà còn giữ vững khi đối mặt với dữ liệu thực sự chưa từng biết trước.
 
-Bên cạnh những kết quả tích cực, tiểu luận còn một số hạn chế: (1) dữ liệu chỉ trải dài khoảng 4 năm, giới hạn khả năng học đầy đủ chu kỳ năm mà Periodogram đã chỉ ra là chu kỳ chiếm ưu thế; (2) mô hình hiện chỉ dự báo một bước duy nhất (horizon $=1$ giờ), chưa mở rộng sang dự báo nhiều bước (multi-step forecasting); (3) kiến trúc GRU đơn biến thể là kiến trúc duy nhất được thử nghiệm, chưa so sánh với các kiến trúc học sâu khác (LSTM, Temporal Convolutional Network, Transformer) hay các biến thể hàm mất mát khác.
+Mục~2.6 mở rộng thêm bài toán sang dự báo đa bước ($H=6$ giờ), so sánh hai chiến lược \textbf{Recursive} (tái sử dụng model horizon=1, không train lại) và \textbf{Direct} (model mới, Grid Search riêng). Kết quả cho thấy Direct GRU vượt trội rõ rệt so với Recursive từ $h=2$ trở đi (tốt hơn tới $24.5\%$ về MAE ở $h=6$), xác nhận bằng thực nghiệm hiện tượng dồn sai số (error compounding) đã lý giải bằng lý thuyết ở Mục~1.4 — trong khi ở $h=1$, hai chiến lược cho kết quả gần tương đương.
 
-Hướng phát triển tiếp theo có thể tập trung vào: mở rộng horizon dự báo nhiều bước, bổ sung các đặc trưng ngoại sinh (dự báo thời tiết), và thử nghiệm các kiến trúc/hàm mất mát khác để đánh giá khả năng cải thiện thêm hiệu năng mô hình.
+Bên cạnh những kết quả tích cực, tiểu luận còn một số hạn chế: (1) dữ liệu chỉ trải dài khoảng 4 năm, giới hạn khả năng học đầy đủ chu kỳ năm mà Periodogram đã chỉ ra là chu kỳ chiếm ưu thế; (2) dù đã thử nghiệm mở rộng multi-step, độ chính xác dự báo vẫn suy giảm khá nhanh theo horizon — ngay cả Direct (không dồn sai số) cũng giảm đáng kể từ $h=1$ đến $h=6$, cho thấy còn nhiều dư địa cải thiện cho bài toán dự báo xa; (3) các kiến trúc GRU dạng Encoder-only (horizon=1, Direct) là những kiến trúc duy nhất được thử nghiệm thực tế, chưa so sánh với LSTM, Temporal Convolutional Network, Transformer, hay kiến trúc Seq2seq (Encoder–Decoder) đầy đủ — kiến trúc mà GRU vốn được thiết kế nguyên bản để giải quyết.
+
+Hướng phát triển tiếp theo có thể tập trung vào: cài đặt kiến trúc Seq2seq (Encoder–Decoder) đầy đủ cho bài toán multi-step; mở rộng horizon dự báo xa hơn 6 giờ; thay giả định persistence của Recursive bằng dự báo thực sự cho các đặc trưng ngoại sinh (ví dụ dự báo thời tiết từ mô hình khí tượng số); và thử nghiệm thêm các kiến trúc/hàm mất mát khác để đánh giá khả năng cải thiện thêm hiệu năng mô hình.
 
 % ==================== TÀI LIỆU THAM KHẢO ====================
 \chapter*{Tài liệu tham khảo}
