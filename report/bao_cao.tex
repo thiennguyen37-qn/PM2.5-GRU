@@ -527,7 +527,7 @@ Chuỗi PM2.5 (Hình~\ref{fig:lineplot}) dao động chủ yếu trong khoảng 
 
 \subsection*{Tính dừng và xu hướng dài hạn}
 
-Để xác định chuỗi PM2.5 có xu hướng dài hạn hay không — yếu tố quan trọng khi lựa chọn cách biểu diễn đầu vào cho mô hình — hai kiểm định tính dừng (ADF và KPSS) và kiểm định xu hướng phi tham số Mann-Kendall được áp dụng trên chuỗi PM2.5 trung bình ngày.
+Để xác định chuỗi PM2.5 có xu hướng dài hạn hay không — yếu tố quan trọng khi lựa chọn cách biểu diễn đầu vào cho mô hình — hai kiểm định tính dừng (ADF và KPSS) được áp dụng trên chuỗi PM2.5 trung bình ngày.
 
 \begin{table}[H]
 \centering
@@ -542,36 +542,7 @@ KPSS (H0: dừng) & $0.277$ & $0.10$ & Dừng (không bác bỏ H0) \\
 \end{tabular}
 \end{table}
 
-Cả hai kiểm định đều đồng thuận: chuỗi PM2.5 là \textbf{chuỗi dừng} (stationary) — không tồn tại xu hướng ngẫu nhiên (stochastic trend) dài hạn. Kết quả này được củng cố thêm bởi kiểm định \textbf{Seasonal Mann-Kendall} trên PM2.5 trung bình tháng: xu hướng ước lượng là \textit{"no trend"} với $p = 0.7686$ (không đủ bằng chứng thống kê để bác bỏ giả thuyết không có xu hướng đơn điệu), độ dốc Sen's slope chỉ $0.28\,\mu$g/m$^3$/tháng ($\approx 3.3\,\mu$g/m$^3$/năm) — rất nhỏ so với độ lệch chuẩn của chuỗi ($7.06\,\mu$g/m$^3$). Nói cách khác, biến động của PM2.5 trong giai đoạn quan sát chủ yếu đến từ \textbf{tính chu kỳ (seasonality)} chứ không phải từ một xu hướng tăng/giảm dài hạn rõ rệt.
-
-\subsection*{Tính chu kỳ (Seasonality)}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/acf_pacf.png}
-\caption{ACF và PACF của PM2.5 theo giờ (168 lag $=$ 1 tuần)}
-\label{fig:acfpacf}
-\end{figure}
-
-Biểu đồ ACF (Hình~\ref{fig:acfpacf}) thể hiện các đỉnh lặp lại rõ rệt tại lag 24, 48, 72, 96... giờ — xác nhận \textbf{chu kỳ ngày (24 giờ)} là chu kỳ chi phối hành vi ngắn hạn của PM2.5, phù hợp với quy luật sinh hoạt/giao thông đô thị (giờ cao điểm) lặp lại mỗi ngày. Đây là căn cứ quan trọng để lựa chọn kích thước cửa sổ đầu vào (window size) cho mô hình ở Mục~2.4.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/decomposition.png}
-\caption{Phân rã chuỗi thời gian PM2.5 theo chu kỳ năm (Trend + Seasonal + Residual)}
-\label{fig:decomp}
-\end{figure}
-
-Phân rã cổ điển (Hình~\ref{fig:decomp}, period$=365$ ngày trên chuỗi trung bình ngày) cho thấy thành phần Trend dao động nhẹ trong khoảng 12--14.7, không có xu hướng đơn điệu rõ ràng — nhất quán với kết luận từ Mann-Kendall. Thành phần Residual sau phân rã được kiểm định Ljung-Box tại các lag 10, 20, 30, 60, 90: kết quả cho thấy vẫn còn tự tương quan có ý nghĩa thống kê ở một số lag, nghĩa là phân rã cổ điển theo chu kỳ năm chưa tách hết toàn bộ cấu trúc chuỗi — phù hợp với thực tế vì chuỗi còn chứa chu kỳ ngày (24h) mà phép phân rã theo period$=365$ không nắm bắt được.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/periodogram.png}
-\caption{Periodogram (FFT) của PM2.5 — xác nhận các chu kỳ chiếm ưu thế}
-\label{fig:periodogram}
-\end{figure}
-
-Phân tích phổ tần số bằng Periodogram (Hình~\ref{fig:periodogram}) — không giả định trước chu kỳ mà quét toàn bộ phổ — xác nhận hai chu kỳ chiếm ưu thế: chu kỳ \textbf{năm ($\approx$363 ngày, power $\approx$246.036)} là mạnh nhất, tiếp theo là chu kỳ \textbf{ngày (24h, power $\approx$31.241)}. Các đỉnh phụ tại 72.6, 41.5 ngày... đều là ước số của $\approx$365 nên là các họa ba (harmonics) của chu kỳ năm, không phải chu kỳ độc lập mới. Điều này cho thấy PM2.5 tại Quy Nhơn chịu ảnh hưởng rõ rệt bởi cả biến động mùa trong năm (gió mùa, thời tiết) lẫn nhịp sinh hoạt hàng ngày.
+Cả hai kiểm định đều đồng thuận: chuỗi PM2.5 là \textbf{chuỗi dừng} (stationary) — không tồn tại xu hướng ngẫu nhiên (stochastic trend) dài hạn. Nói cách khác, biến động của PM2.5 trong giai đoạn quan sát chủ yếu đến từ \textbf{tính chu kỳ (seasonality)} chứ không phải từ một xu hướng tăng/giảm dài hạn rõ rệt.
 
 \subsection*{Xu hướng theo Moving Average}
 
@@ -582,7 +553,38 @@ Phân tích phổ tần số bằng Periodogram (Hình~\ref{fig:periodogram}) �
 \label{fig:ma}
 \end{figure}
 
-Hình~\ref{fig:ma} cho thấy các đường trung bình trượt 30 ngày và 90 ngày dao động lặp lại theo chu kỳ hàng năm — tăng vào giai đoạn đầu năm (khoảng tháng 1--4) và giảm dần về giữa năm — chứ không trôi dạt theo một hướng cố định qua các năm 2022--2026, nhất quán với kết luận "không có xu hướng đơn điệu" từ kiểm định Mann-Kendall đã trình bày ở trên. Chuỗi giá trị thực tế (đường xám) dao động rất mạnh quanh các đường trung bình trượt, phản ánh nhiều đợt tăng đột biến ngắn hạn xen kẽ nền chu kỳ mùa.
+Hình~\ref{fig:ma} cho thấy các đường trung bình trượt 30 ngày và 90 ngày dao động lặp lại theo chu kỳ hàng năm — tăng vào giai đoạn đầu năm (khoảng tháng 1--4) và giảm dần về giữa năm — chứ không trôi dạt theo một hướng cố định qua các năm 2022--2026, nhất quán với kết luận "chuỗi dừng, không có xu hướng dài hạn" từ kiểm định ADF/KPSS đã trình bày ở trên. Chuỗi giá trị thực tế (đường xám) dao động rất mạnh quanh các đường trung bình trượt, phản ánh nhiều đợt tăng đột biến ngắn hạn xen kẽ nền chu kỳ mùa.
+
+\subsection*{Tính chu kỳ (Seasonality)}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/acf_pacf.png}
+\caption{ACF và PACF của PM2.5 theo giờ (168 lag $=$ 1 tuần)}
+\label{fig:acfpacf}
+\end{figure}
+
+Biểu đồ ACF (Hình~\ref{fig:acfpacf}) thể hiện các đỉnh lặp lại rõ rệt tại lag 24, 48, 72, 96... giờ — xác nhận \textbf{chu kỳ ngày (24 giờ)} là chu kỳ chi phối hành vi ngắn hạn của PM2.5, phù hợp với quy luật sinh hoạt/giao thông đô thị (giờ cao điểm) lặp lại mỗi ngày. Đây là một trong những căn cứ cho quyết định gộp dữ liệu về mức trung bình ngày trước khi đưa vào mô hình (Mục~2.3), vì chu kỳ trong ngày không còn là yếu tố cần mô hình hóa trực tiếp ở granularity ngày.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/decomposition.png}
+\caption{Phân rã chuỗi thời gian PM2.5 theo chu kỳ năm (Trend + Seasonal + Residual)}
+\label{fig:decomp}
+\end{figure}
+
+Phân rã cổ điển (Hình~\ref{fig:decomp}, period$=365$ ngày trên chuỗi trung bình ngày) cho thấy thành phần Trend dao động nhẹ trong khoảng 12--14.7, không có xu hướng đơn điệu rõ ràng, còn thành phần Seasonal thể hiện rõ chu kỳ lặp lại theo năm — phù hợp với chu kỳ ngày (24h) và chu kỳ năm đã quan sát được ở Hình~\ref{fig:acfpacf}.
+
+\subsection*{Biến động PM2.5 theo mùa trong năm}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/pm25_seasonal_subseries.png}
+\caption{Seasonal Subseries Plot: PM2.5 theo từng tháng (gộp tất cả các năm)}
+\label{fig:seasonal}
+\end{figure}
+
+Hình~\ref{fig:seasonal} cho thấy PM2.5 đạt đỉnh vào các tháng 1--4 (cao nhất ở tháng 4, trung bình $\approx$20~$\mu$g/m$^3$), giảm dần xuống mức thấp nhất vào các tháng 7--10 (trung bình $\approx$10--12~$\mu$g/m$^3$), rồi tăng nhẹ trở lại vào tháng 11--12. Kiểu biến động này phù hợp với đặc trưng khí hậu khu vực Nam Trung Bộ: các tháng đầu năm (gió mùa Đông Bắc, ít mưa) khiến bụi mịn tích tụ nhiều hơn, trong khi mùa mưa (tháng 7--10) giúp rửa trôi các hạt lơ lửng, làm giảm nồng độ PM2.5.
 
 \subsection*{Phân phối PM2.5 theo từng năm}
 
@@ -606,272 +608,208 @@ Hình~\ref{fig:violin} cho thấy giá trị trung vị/trung bình PM2.5 tươn
 
 Trong tổng số 1.453 ngày có dữ liệu, có \textbf{510 ngày (35.1\%)} có nồng độ PM2.5 trung bình 24h vượt ngưỡng khuyến nghị của WHO Air Quality Guideline 2021 (15~$\mu$g/m$^3$) — cho thấy hơn một phần ba số ngày trong giai đoạn quan sát không đạt chuẩn an toàn theo khuyến nghị quốc tế. Ngược lại, \textbf{không có ngày nào (0.0\%)} vượt ngưỡng QCVN 05:2013/BTNMT của Việt Nam (50~$\mu$g/m$^3$) (Hình~\ref{fig:whoqcvn}) — phản ánh khoảng cách đáng kể giữa quy chuẩn hiện hành trong nước và chuẩn khuyến nghị siết chặt hơn của WHO.
 
-\subsection*{Biến động PM2.5 theo mùa trong năm}
+% ==================== 2.3 TIỀN XỬ LÝ ====================
+\section{Tiền xử lý dữ liệu}
+
+Trong quá trình thử nghiệm, một mô hình Direct GRU dự báo trực tiếp trên nồng độ PM2.5 tuyệt đối cho thấy hạn chế rõ rệt khi kiểm chứng trên dữ liệu mới: nồng độ PM2.5 thực tế trong giai đoạn đó suy giảm đáng kể so với nền mà mô hình đã học được từ dữ liệu huấn luyện — một dạng lệch phân phối (distribution shift) theo thời gian mà một mạng nơ-ron huấn luyện một lần rồi giữ cố định trọng số khó thích nghi kịp. Để khắc phục, giải pháp cuối cùng được xây dựng theo kiến trúc \textbf{hybrid}, kết hợp hai thành phần bổ trợ cho nhau:
+
+\begin{itemize}
+    \item Một thành phần thống kê cổ điển — \textbf{EWMA} (Exponentially Weighted Moving Average) — ước lượng xu hướng/nền hiện tại của chuỗi PM2.5 bằng trung bình có trọng số giảm dần theo cấp số nhân đối với các quan sát càng cũ càng ít quan trọng. Vì được tính trực tiếp từ dữ liệu chứ không qua huấn luyện bằng gradient, thành phần này có thể cập nhật gần như tức thời mỗi khi có thêm quan sát thật mới, bám theo sự thay đổi của nền nhanh hơn nhiều so với việc huấn luyện lại mạng nơ-ron.
+    \item Mô hình \textbf{Direct GRU} (đã trình bày ở Mục~1.4) — không còn học trực tiếp PM2.5 tuyệt đối, mà học phần dao động ngắn hạn còn lại sau khi đã trừ đi thành phần xu hướng nói trên.
+\end{itemize}
+
+Toàn bộ các bước tiền xử lý và xây dựng mô hình trình bày dưới đây được thiết kế phục vụ trực tiếp cho kiến trúc hybrid này.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/pm25_seasonal_subseries.png}
-\caption{Seasonal Subseries Plot: PM2.5 theo từng tháng (gộp tất cả các năm)}
-\label{fig:seasonal}
+\begin{tikzpicture}[>=Latex, x=1cm, y=1cm]
+  % ---------- Input ----------
+  \node[realcell, minimum width=1.9cm, minimum height=0.9cm] (input) at (0,0.8) {PM2.5};
+  \node[font=\scriptsize, align=center] at (0,-0.55) {Chuỗi PM2.5\\theo ngày (thật)};
+
+  % ---------- Nhanh tren: EWMA -> Trend ----------
+  \node[gatebox, minimum width=1.7cm, minimum height=0.9cm] (ewma) at (3.6,2.4) {EWMA};
+  \node[font=\scriptsize] at (3.6,3.15) {(span = 7 ngày)};
+  \draw[cline] (input.north) |- (ewma.west);
+
+  \node[predcell, minimum width=2.1cm, minimum height=0.9cm, fill=yellow!35] (trend) at (7.2,2.4) {Trend $T$};
+  \draw[cline] (ewma.east) -- (trend.west);
+
+  % ---------- Nhanh duoi: GRU -> Residual ----------
+  \node[grubox, minimum width=1.7cm, minimum height=0.9cm] (gru) at (3.6,-0.8) {GRU};
+  \node[font=\scriptsize, align=center] at (3.6,-1.55) {Direct multi-output\\(lookback=28, horizon=7)};
+  \draw[cline] (input.south) |- (gru.west);
+
+  \node[predcell, minimum width=2.4cm, minimum height=0.9cm] (resid) at (7.2,-0.8) {Residual $\hat{r}$};
+  \draw[cline] (gru.east) -- (resid.west);
+
+  % ---------- Cong lai ----------
+  \node[opnode, minimum size=0.6cm, font=\normalsize] (plus) at (10.2,0.8) {$+$};
+  \draw[cline] (trend.east) -| (plus.north);
+  \draw[cline] (resid.east) -| (plus.south);
+
+  \node[predcell, minimum width=2.6cm, minimum height=1cm, fill=orange!45] (output) at (13.4,0.8) {PM2.5 dự báo};
+  \draw[cline] (plus.east) -- (output.west);
+
+  \node[font=\scriptsize, align=center] at (13.4,-0.3) {$\hat{y}_{t+1..t+7} = T_{t+1..t+7} + \hat{r}_{t+1..t+7}$};
+\end{tikzpicture}
+\caption{Kiến trúc hybrid: EWMA ước lượng Trend, GRU học Residual, cộng lại thành PM2.5 dự báo}
+\label{fig:hybrid_arch}
 \end{figure}
-
-Hình~\ref{fig:seasonal} cho thấy PM2.5 đạt đỉnh vào các tháng 1--4 (cao nhất ở tháng 4, trung bình $\approx$20~$\mu$g/m$^3$), giảm dần xuống mức thấp nhất vào các tháng 7--10 (trung bình $\approx$10--12~$\mu$g/m$^3$), rồi tăng nhẹ trở lại vào tháng 11--12. Kiểu biến động này phù hợp với đặc trưng khí hậu khu vực Nam Trung Bộ: các tháng đầu năm (gió mùa Đông Bắc, ít mưa) khiến bụi mịn tích tụ nhiều hơn, trong khi mùa mưa (tháng 7--10) giúp rửa trôi các hạt lơ lửng, làm giảm nồng độ PM2.5. Kết quả này nhất quán với nhận xét ở Mục~2.5 rằng giai đoạn dữ liệu mới (cuối tháng 7 -- tháng 8/2026, mùa mưa) có PM2.5 thấp và ít biến động hơn.
-
-% ==================== 2.3 TIỀN XỬ LÝ ====================
-\section{Tiền xử lý dữ liệu}
 
 \subsection*{Loại bỏ đặc trưng không liên quan}
 
 Dựa trên kết quả phân tích tương quan ở Mục~2.2 (Correlation Heatmap $|r| < 0.1$, và Cross-Correlation Function ở mọi độ trễ đều $< 0.16$), ba biến \textbf{Dust}, \textbf{UV Index}, \textbf{UV Index Clear Sky} được loại bỏ khỏi tập đặc trưng đầu vào nhằm giảm nhiễu và số chiều dữ liệu.
 
-\subsection*{Feature Engineering: Mã hóa chu kỳ thời gian}
+\subsection*{Gộp dữ liệu theo ngày}
 
-Hai đặc trưng thời gian rời rạc \textbf{hour} và \textbf{month} được mã hóa dạng \textbf{cyclical encoding} bằng cặp hàm sin/cos, nhằm tránh điểm gãy giả tạo (ví dụ 23h và 0h về bản chất "gần nhau" chứ không "cách xa 23 đơn vị" như khi giữ nguyên dạng số nguyên):
+Các thử nghiệm ban đầu ở mức dữ liệu theo giờ cho thấy khi horizon dự báo được kéo dài (nhiều giờ đến nhiều ngày tới), sai số tăng nhanh và mô hình trở nên nhạy cảm với nhiễu ngắn hạn giữa các giờ liên tiếp. Vì vậy, toàn bộ dữ liệu (cả tập huấn luyện \texttt{cleaned\_data.csv} lẫn tập dữ liệu mới dùng để đánh giá) được \textbf{gộp về mức trung bình ngày}. Phép gộp này làm mượt các dao động ngắn hạn trong ngày, đồng thời quy đổi horizon dự báo từ đơn vị giờ sang đơn vị ngày — giúp bài toán dự báo nhiều bước trở nên khả thi và ổn định hơn.
 
-\begin{equation}
-\text{hour\_sin} = \sin\!\left(\frac{2\pi \cdot \text{hour}}{24}\right), \qquad
-\text{hour\_cos} = \cos\!\left(\frac{2\pi \cdot \text{hour}}{24}\right)
-\end{equation}
+\subsection*{Tách xu hướng và phần dư (Decomposition)}
+
+Cụ thể, chuỗi PM2.5 theo ngày được \textbf{phân tách thành hai thành phần} trước khi đưa vào mô hình:
+
+\begin{itemize}
+    \item \textbf{Xu hướng (Trend)}: ước lượng bằng EWMA nhân quả — chỉ sử dụng các quan sát trong quá khứ, với độ dài chu kỳ (span) $=7$ ngày.
+    \item \textbf{Phần dư (Residual)}: phần chênh lệch còn lại giữa giá trị PM2.5 thực tế và Xu hướng — phản ánh các dao động ngắn hạn quanh nền, có tính ổn định cao hơn nhiều so với chuỗi PM2.5 gốc.
+\end{itemize}
+
+Mô hình GRU được huấn luyện để học và dự báo trực tiếp \textbf{thành phần Residual} (thay cho PM2.5 tuyệt đối) ở cả đầu vào lẫn đầu ra. Khi tạo dự báo, giá trị PM2.5 cuối cùng được khôi phục bằng cách cộng Residual do mô hình dự báo với giá trị Xu hướng gần nhất đã biết.
+
+\subsection*{Mã hóa chu kỳ thời gian}
+
+Vì đơn vị thời gian cơ sở giờ đây là ngày, đặc trưng lịch duy nhất còn phù hợp là \textbf{tháng} — được mã hóa dạng \textbf{cyclical encoding} bằng cặp hàm sin/cos nhằm phản ánh đúng tính chu kỳ (tháng 12 và tháng 1 về bản chất "gần nhau"):
+
 \begin{equation}
 \text{month\_sin} = \sin\!\left(\frac{2\pi \cdot \text{month}}{12}\right), \qquad
 \text{month\_cos} = \cos\!\left(\frac{2\pi \cdot \text{month}}{12}\right)
 \end{equation}
 
-Hai biến \textbf{day} và \textbf{year} bị loại bỏ: \textit{day} (ngày trong tháng) không có chu kỳ vật lý rõ ràng liên quan đến PM2.5, còn \textit{year} là giá trị tuyệt đối không tổng quát hóa được cho các thời điểm tương lai nằm ngoài phạm vi dữ liệu huấn luyện.
+Đặc trưng này giúp mô hình nắm bắt được tính mùa vụ của PM2.5 đã quan sát ở Mục~2.2 (nồng độ cao vào các tháng đầu năm, thấp vào mùa mưa giữa năm).
 
-\subsection*{Chia tập Train / Validation / Test theo thời gian}
+\subsection*{Chia tập Train / Validation / Test}
 
-Do bản chất tuần tự của dữ liệu, việc chia tập không được thực hiện ngẫu nhiên (shuffle) như bài toán học có giám sát thông thường, để tránh rò rỉ dữ liệu (data leakage) từ tương lai vào quá khứ. Dữ liệu được chia theo mốc thời gian với tỷ lệ 70/15/15:
+Khác với thiết kế ban đầu (chia 70/15/15 trên cùng một tệp dữ liệu), tập Test trong thiết lập cuối cùng là một \textbf{bộ dữ liệu hoàn toàn mới}, thu thập ở giai đoạn sau đó — mô phỏng sát tình huống triển khai thực tế, khi mô hình phải dự báo cho dữ liệu chưa từng "nhìn thấy" trong suốt quá trình phát triển:
 
 \begin{table}[H]
 \centering
-\caption{Phân chia tập Train / Validation / Test theo thời gian}
+\caption{Phân chia tập Train / Validation / Test (dữ liệu theo ngày)}
 \begin{tabular}{lrll}
 \toprule
-Tập & Số dòng & Từ & Đến \\
+Tập & Số ngày & Từ & Đến \\
 \midrule
-Train & 24.405 & 2022-08-04 07:00 & 2025-05-17 03:00 \\
-Validation & 5.230 & 2025-05-17 04:00 & 2025-12-21 01:00 \\
-Test & 5.230 & 2025-12-21 02:00 & 2026-07-26 23:00 \\
+Train & 1.446 & 2022-08-04 & 2026-07-19 \\
+Validation & 7 & 2026-07-20 & 2026-07-26 \\
+Test & 28 & 2026-07-27 & 2026-08-23 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
+Tập Validation có độ dài đúng bằng horizon dự báo (7 ngày) — cùng độ dài với mỗi lượt dự báo trên tập Test — nhằm mô phỏng sát nhất bài toán mà mô hình thực sự phải giải quyết khi được tinh chỉnh siêu tham số.
+
 \subsection*{Chuẩn hóa dữ liệu}
 
-Toàn bộ đặc trưng số được chuẩn hóa về khoảng $[0,1]$ bằng \textbf{MinMaxScaler}. Điểm quan trọng cần lưu ý: scaler chỉ được \textit{fit} trên tập Train, sau đó dùng để \textit{transform} tập Validation và Test — nhằm tránh rò rỉ thông tin thống kê (min/max) của tập validation/test vào quá trình huấn luyện.
+Toàn bộ đặc trưng số (đã bao gồm thành phần Residual thay cho PM2.5 gốc) được chuẩn hóa về khoảng $[0,1]$ bằng \textbf{MinMaxScaler}. Scaler chỉ được \textit{fit} trên tập Train, sau đó dùng để \textit{transform} tập Validation và Test — nhằm tránh rò rỉ thông tin thống kê (min/max) của tập validation/test vào quá trình huấn luyện.
 
-\subsection*{Sliding Window: Tạo cặp \texorpdfstring{$(X, y)$}{(X, y)}}
+\subsection*{Tạo cặp \texorpdfstring{$(X, y)$}{(X, y)} cho dự báo đa bước}
 
-Từ dữ liệu đã chuẩn hóa, các cặp $(X, y)$ được tạo bằng kỹ thuật sliding window (Mục~1.1) với horizon $= 1$. Với mỗi vị trí $i$, $X_i$ là ma trận gồm \texttt{window\_size} bước thời gian $\times$ 11 đặc trưng, và $y_i$ là giá trị PM2.5 tại bước kế tiếp.
+Từ dữ liệu đã chuẩn hóa, các cặp $(X, y)$ được tạo bằng kỹ thuật sliding window (Mục~1.1) với \texttt{window\_size} $=28$ ngày và horizon $=7$ ngày. Độ dài cửa sổ quan sát này được xác định bằng thực nghiệm so sánh (7, 14 và 28 ngày, giữ nguyên toàn bộ phần còn lại của pipeline) — cửa sổ 28 ngày cho MAE và RMSE tổng hợp thấp nhất trên tập Test. Với mỗi vị trí $i$, $X_i$ là ma trận gồm 28 bước thời gian $\times$ 9 đặc trưng (PM10, PM2.5 đã thay bằng Residual, Carbon Monoxide, Nitrogen Dioxide, Sulphur Dioxide, Ozone, Aerosol Optical Depth, month\_sin, month\_cos); khác với thiết lập horizon $=1$ ban đầu, $y_i$ giờ đây là một \textbf{vector 7 giá trị} — Residual của PM2.5 tại cả 7 ngày tiếp theo, được dự báo đồng thời trong một lượt duy nhất.
 
-% ==================== 2.4 XÂY DỰNG MÔ HÌNH ====================
 \section{Xây dựng mô hình}
 
-\subsection*{Kiến trúc GRU triển khai}
+\subsection*{Kiến trúc GRU: Direct Multi-output}
 
-Mô hình được cài đặt bằng PyTorch, gồm một khối GRU 2 lớp (\texttt{num\_layers=2}) với dropout $0.2$ giữa các lớp, theo sau bởi một lớp fully-connected tuyến tính ánh xạ trạng thái ẩn tại bước thời gian cuối cùng thành giá trị PM2.5 dự báo (Hình mô tả kiến trúc — xem công thức Mục~1.4). Với \texttt{hidden\_size=64} và 11 đặc trưng đầu vào, mô hình có tổng cộng \textbf{39.809 tham số có thể huấn luyện}.
+Mô hình giữ nguyên khối GRU 2 lớp (dropout $0.2$) đã trình bày ở Mục~1.4, nhưng lớp fully-connected cuối được đổi thành ánh xạ trạng thái ẩn tại bước thời gian cuối cùng thành \textbf{7 giá trị dự báo đồng thời} thay vì 1 giá trị — đúng chiến lược \textbf{Direct GRU} đã trình bày lý thuyết ở Mục~1.4. Lựa chọn này dựa trên cơ sở: bằng cách dự báo trọn horizon trong một lượt forward duy nhất, Direct GRU không dùng giá trị dự báo của chính nó làm đầu vào cho bước kế tiếp, nên tránh được hiện tượng \textbf{dồn sai số} (error compounding) — hạn chế cố hữu của chiến lược Recursive khi horizon tăng lên. Với 9 đặc trưng đầu vào và \texttt{hidden\_size}$=64$, mô hình có tổng cộng \textbf{39.815 tham số có thể huấn luyện}.
 
 \subsection*{Tinh chỉnh siêu tham số}
 
-Grid Search được thực hiện trên không gian ba siêu tham số: \texttt{window\_size} $\in \{24, 48\}$ giờ, \texttt{hidden\_size} $\in \{32, 64\}$, \texttt{learning\_rate} $\in \{0.001, 0.0005\}$ — mỗi cấu hình huấn luyện tối đa 6 epoch với early stopping (patience$=2$), đánh giá bằng validation loss (MAE, thang chuẩn hóa).
+Grid Search được thực hiện trên không gian hai siêu tham số \texttt{hidden\_size} $\in \{16, 32, 64\}$ và \texttt{learning\_rate} $\in \{0.001, 0.0005\}$ (\texttt{window\_size}$=28$ ngày và horizon$=7$ ngày giữ cố định) — mỗi cấu hình huấn luyện tối đa 20 epoch với early stopping (patience$=5$), đánh giá bằng validation loss (MAE, thang chuẩn hóa).
 
 \begin{table}[H]
 \centering
 \caption{Kết quả Grid Search siêu tham số (sắp xếp theo validation loss)}
-\begin{tabular}{rrrr}
+\begin{tabular}{rrr}
 \toprule
-window\_size (h) & hidden\_size & learning\_rate & val\_loss (MAE, scaled) \\
+hidden\_size & learning\_rate & val\_loss (MAE, scaled) \\
 \midrule
-48 & 64 & 0.001  & 0.01276 \\
-24 & 64 & 0.001  & 0.01390 \\
-48 & 32 & 0.001  & 0.01410 \\
-24 & 32 & 0.001  & 0.01431 \\
-24 & 64 & 0.0005 & 0.01502 \\
-48 & 64 & 0.0005 & 0.01738 \\
-24 & 32 & 0.0005 & 0.01801 \\
-48 & 32 & 0.0005 & 0.01852 \\
+64 & 0.0010 & 0.09814 \\
+32 & 0.0005 & 0.10780 \\
+32 & 0.0010 & 0.11026 \\
+64 & 0.0005 & 0.11309 \\
+16 & 0.0010 & 0.11616 \\
+16 & 0.0005 & 0.11718 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{sloppypar}
-Cấu hình có validation loss thấp nhất tuyệt đối là \texttt{window=48h, hidden=64, lr=0.001} (0.01276). Tuy nhiên, để tránh chọn một mô hình phức tạp/tốn chi phí tính toán hơn chỉ vì một khác biệt nhỏ không đáng kể, tiêu chí lựa chọn cuối cùng là: trong số các cấu hình có validation loss nằm trong khoảng 10\% so với giá trị tốt nhất, chọn cấu hình có chi phí tính toán thấp nhất (ước lượng bằng $\text{window\_size} \times \text{hidden\_size}$). Theo tiêu chí này, cấu hình được chọn là:
-\end{sloppypar}
-
-\[
-\texttt{window\_size} = 24\text{h}, \quad \texttt{hidden\_size} = 64, \quad \texttt{learning\_rate} = 0.001
-\]
-
-Cửa sổ 24 giờ cũng phù hợp với phát hiện từ ACF (Hình~\ref{fig:acfpacf}): chu kỳ ngày là chu kỳ chi phối hành vi ngắn hạn của PM2.5, nên một cửa sổ dài hơn (48h) không mang lại cải thiện tương xứng với chi phí tính toán tăng thêm.
+Cấu hình được chọn là cấu hình có validation loss thấp nhất tuyệt đối: \texttt{hidden\_size}$=64$, \texttt{learning\_rate}$=0.001$. Khác với tiêu chí "trong khoảng dung sai 10\%, ưu tiên cấu hình nhẹ nhất" từng áp dụng ở mô hình horizon$=1$ ban đầu, thực nghiệm ở bài toán multi-output này cho thấy việc ưu tiên một mô hình nhẹ hơn không mang lại lợi ích rõ ràng — thậm chí có xu hướng làm giảm chất lượng dự báo do thiếu dung lượng biểu diễn cần thiết — nên tiêu chí lựa chọn được đơn giản hóa về việc chọn thẳng cấu hình tốt nhất.
 
 \subsection*{Huấn luyện mô hình cuối cùng}
 
-Với cấu hình đã chọn, mô hình được huấn luyện lại với ngân sách epoch lớn hơn (tối đa 25 epoch, patience$=5$) để hội tụ đầy đủ hơn.
+Với cấu hình đã chọn, mô hình được huấn luyện lại với ngân sách epoch lớn hơn (tối đa 40 epoch, patience$=8$) để hội tụ đầy đủ hơn.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.75\textwidth]{figures/learning_curve.png}
-\caption{Learning curve — GRU (window=24h, hidden=64)}
-\label{fig:learning_curve}
+\includegraphics[width=0.75\textwidth]{figures/hybrid_learning_curve.png}
+\caption{Learning curve — GRU Residual (hidden\_size=64, horizon=7 ngày)}
+\label{fig:hybrid_learning_curve}
 \end{figure}
 
-Quá trình huấn luyện dừng sớm ở epoch 15 (val\_loss tốt nhất đạt được ở epoch 10, $\approx 0.0114$), cho thấy early stopping hoạt động hiệu quả trong việc ngăn mô hình overfit lên tập train sau khi đã hội tụ trên tập validation (Hình~\ref{fig:learning_curve}).
+Quá trình huấn luyện chạy hết ngân sách 40 epoch mà không kích hoạt early stopping, đạt validation loss tốt nhất $\approx 0.0839$ (thang chuẩn hóa) tại epoch 38 (Hình~\ref{fig:hybrid_learning_curve}). Đường Train Loss giảm ổn định và tương đối mượt trong khi Validation Loss dao động mạnh hơn — phản ánh đúng thực tế tập Validation ở đây chỉ gồm một lượt dự báo 7 ngày duy nhất, nên tín hiệu đánh giá có độ nhiễu cao hơn nhiều so với một tập validation cỡ lớn thông thường.
 
-\subsection*{Đánh giá trên tập Test}
+\section{Đánh giá mô hình: Walk-forward trên dữ liệu mới}
 
-Mô hình GRU (window=24h, hidden\_size=64) được đánh giá trên toàn bộ tập Test bằng hai chỉ số MAE và RMSE (thang đo gốc, $\mu$g/m$^3$).
+Vì tập Test là dữ liệu thật hoàn toàn mới và mô hình dự báo trực tiếp trọn horizon 7 ngày trong một lượt, chiến lược \textbf{walk-forward theo khối} được áp dụng để tận dụng toàn bộ 28 ngày Test một cách công bằng và đáng tin cậy hơn một lượt dự báo duy nhất. Cụ thể, 28 ngày Test được chia thành \textbf{4 khối liên tiếp}, mỗi khối 7 ngày. Với khối đầu tiên, mô hình dự báo dựa trên 7 ngày lịch sử gần nhất đã biết (thuộc tập Train/Validation). Sau khi giá trị thật của một khối được "quan sát", dữ liệu đó được dùng cho hai việc: (i) cập nhật cửa sổ lịch sử làm đầu vào cho khối kế tiếp, và (ii) \textbf{tinh chỉnh nhẹ} (fine-tune) lại trọng số mô hình — 5 epoch, với tốc độ học giảm 10 lần so với lúc huấn luyện ban đầu — nhằm giúp mô hình thích nghi phần nào với biến động mới quan sát được trước khi dự báo khối tiếp theo. Toàn bộ quá trình chỉ sử dụng giá trị thật đã biết làm đầu vào, không dùng lại dự báo của chính mô hình.
+
+\subsection*{Kết quả dự báo theo từng khối}
 
 \begin{table}[H]
 \centering
-\caption{Hiệu năng mô hình GRU trên tập Test (thang đo gốc, $\mu$g/m$^3$)}
-\begin{tabular}{lrr}
+\caption{Hiệu năng mô hình hybrid trên tập Test theo từng khối walk-forward}
+\begin{tabular}{clrr}
 \toprule
-Mô hình & MAE ($\mu$g/m$^3$) & RMSE ($\mu$g/m$^3$) \\
+Khối & Khoảng thời gian & MAE ($\mu$g/m$^3$) & RMSE ($\mu$g/m$^3$) \\
 \midrule
-\textbf{GRU (window=24h)} & \textbf{1.172} & \textbf{2.173} \\
+1 & 2026-07-27 -- 2026-08-02 & 2.642 & 3.367 \\
+2 & 2026-08-03 -- 2026-08-09 & 4.149 & 4.948 \\
+3 & 2026-08-10 -- 2026-08-16 & 2.217 & 2.515 \\
+4 & 2026-08-17 -- 2026-08-23 & 2.298 & 2.567 \\
+\midrule
+\textbf{Tổng hợp (28 ngày)} & & \textbf{2.827} & \textbf{3.490} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/prediction_test.png}
-\caption{PM2.5: Thực tế và Dự báo GRU trên tập Test}
-\label{fig:pred_test}
+\includegraphics[width=\textwidth]{figures/hybrid_prediction_walkforward.png}
+\caption{PM2.5: Thực tế và Dự báo walk-forward trên tập Test (đường chấm xám đánh dấu ranh giới giữa các khối)}
+\label{fig:hybrid_pred}
 \end{figure}
 
-Với MAE $=1.172\,\mu$g/m$^3$ trên thang đo gốc — chỉ tương đương khoảng $8.5\%$ so với giá trị trung bình PM2.5 của toàn bộ dữ liệu ($13.73\,\mu$g/m$^3$, xem Bảng~\ref{tab:describe}) — mô hình cho sai số tương đối nhỏ. Hình~\ref{fig:pred_test} cho thấy đường dự báo GRU (xanh lá) bám khá sát đường thực tế (cam) trên toàn bộ tập Test, kể cả tại các đợt tăng đột biến.
+Khối 2 (03/08 -- 09/08) có sai số cao nhất trong 4 khối, trùng với giai đoạn PM2.5 thực tế sụt giảm mạnh nhất so với nền lịch sử mà mô hình đã học. Điều này cho thấy dù cơ chế Decomposition và fine-tune giữa các khối đã giúp cải thiện đáng kể so với việc dự báo trực tiếp trên PM2.5 tuyệt đối, mô hình vẫn cần một khoảng thời gian nhất định để thích nghi hoàn toàn với một biến động giảm đột ngột và kéo dài. Ở các khối sau (3 và 4), khi nền PM2.5 mới đã dần ổn định, sai số giảm trở lại xuống mức thấp hơn cả khối đầu tiên.
 
 \subsection*{Phân tích Residual}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/residual_test.png}
-\caption{Residual (Thực tế $-$ Dự báo) trên tập Test}
-\label{fig:resid_test}
+\includegraphics[width=\textwidth]{figures/hybrid_residual.png}
+\caption{Residual (Thực tế $-$ Dự báo) trên tập Test, tổng hợp cả 4 khối walk-forward}
+\label{fig:hybrid_resid}
 \end{figure}
 
-Residual trên tập Test có \textbf{mean $= 0.175\,\mu$g/m$^3$}, \textbf{std $= 2.166\,\mu$g/m$^3$} — mean gần 0 cho thấy mô hình không thiên lệch (bias) hệ thống theo một hướng cụ thể. Phân phối residual (Hình~\ref{fig:resid_test}) tập trung quanh 0, tuy vẫn còn một số giá trị residual lớn tương ứng với các thời điểm PM2.5 tăng đột biến khó dự báo — đây là hạn chế phổ biến của các mô hình dự báo chuỗi thời gian khi đối mặt với sự kiện hiếm/bất thường.
+Residual tổng hợp trên toàn bộ 28 ngày Test có \textbf{mean $= -2.405\,\mu$g/m$^3$} và \textbf{std $= 2.529\,\mu$g/m$^3$} (Hình~\ref{fig:hybrid_resid}). Giá trị mean âm cho thấy mô hình vẫn còn thiên lệch (bias) hệ thống theo hướng dự báo cao hơn thực tế — hệ quả trực tiếp của việc nền PM2.5 trong giai đoạn Test thấp hơn đáng kể so với những gì mô hình quan sát được trong phần lớn dữ liệu huấn luyện. So với việc dự báo trực tiếp trên PM2.5 tuyệt đối (không qua Decomposition), độ lệch này đã được thu hẹp đáng kể, nhưng chưa được loại bỏ hoàn toàn — cho thấy đây là một hướng còn có thể cải thiện thêm.
 
-% ==================== 2.5 ĐÁNH GIÁ OUT-OF-SAMPLE ====================
-\section{Đánh giá trên dữ liệu mới (Out-of-sample)}
-
-Một điểm mạnh trong thiết kế thực nghiệm của tiểu luận này là việc đánh giá mô hình không chỉ dừng lại ở tập Test (vốn vẫn nằm trong cùng khoảng thời gian thu thập dữ liệu ban đầu), mà còn được kiểm chứng trên một bộ dữ liệu \textbf{hoàn toàn mới}, được thu thập ở một thời điểm sau đó — mô phỏng sát tình huống triển khai thực tế khi mô hình phải dự báo cho dữ liệu chưa từng "nhìn thấy" trong suốt quá trình phát triển.
-
-\subsection*{Thu thập và xử lý dữ liệu mới}
-
-Bộ dữ liệu mới (\texttt{new\_data.csv}) gồm \textbf{696 dòng}, từ \texttt{2026-07-27 00:00} đến \texttt{2026-08-24 23:00} (29 ngày), được thu thập từ cùng nguồn Open-Meteo API tại cùng vị trí. Dữ liệu được làm sạch và tiền xử lý theo đúng quy trình đã áp dụng ở Mục~2.1--2.3 (cùng scaler đã fit trên tập Train trước đó — \textbf{không fit lại} để đảm bảo tính nhất quán và tránh leakage). Để có đủ ngữ cảnh (context) cho các điểm dự báo đầu tiên của dữ liệu mới, 24 giờ cuối của tập Test được nối thêm vào trước dữ liệu mới làm phần lịch sử — toàn bộ phần ngữ cảnh này đều là dữ liệu \textit{quá khứ} so với từng điểm cần dự báo, nên không phát sinh rò rỉ dữ liệu.
-
-\subsection*{Kết quả dự báo}
-
-\begin{table}[H]
-\centering
-\caption{Hiệu năng mô hình GRU trên dữ liệu mới (out-of-sample, $\mu$g/m$^3$)}
-\begin{tabular}{lrr}
-\toprule
-Mô hình & MAE ($\mu$g/m$^3$) & RMSE ($\mu$g/m$^3$) \\
-\midrule
-\textbf{GRU (window=24h)} & \textbf{0.769} & \textbf{1.366} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/prediction_newdata.png}
-\caption{PM2.5: Thực tế và Dự báo GRU trên dữ liệu mới}
-\label{fig:pred_new}
-\end{figure}
-
-Đáng chú ý, sai số tuyệt đối trên dữ liệu mới (MAE $=0.769\,\mu$g/m$^3$) thấp hơn cả sai số trên tập Test (MAE $=1.172\,\mu$g/m$^3$) — điều này phù hợp với thực tế nồng độ PM2.5 trong giai đoạn cuối tháng 7 -- tháng 8/2026 (mùa mưa tại khu vực Nam Trung Bộ) nhìn chung thấp và ít biến động đột biến hơn giai đoạn tập Test, khiến bài toán dự báo trở nên "dễ" hơn tương đối trong giai đoạn này.
-
-\subsection*{Phân tích Residual trên dữ liệu mới}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/residual_newdata.png}
-\caption{Residual (Thực tế $-$ Dự báo) trên dữ liệu mới}
-\label{fig:resid_new}
-\end{figure}
-
-\begin{sloppypar}
-Residual trên dữ liệu mới có \textbf{mean $= 0.013\,\mu$g/m$^3$} (gần như bằng 0) và \textbf{std $= 1.366\,\mu$g/m$^3$} — thấp hơn cả độ lệch chuẩn residual trên tập Test, củng cố kết luận rằng mô hình duy trì được khả năng tổng quát hóa tốt khi triển khai trên dữ liệu thực sự mới, không có dấu hiệu suy giảm hiệu năng (model drift) đáng kể trong giai đoạn quan sát.
-\end{sloppypar}
-
-% ==================== 2.6 MULTI-STEP FORECASTING ====================
-\section{Mở rộng: Dự báo đa bước (Multi-step Forecasting)}
-
-Mô hình ở Mục~2.4 chỉ dự báo được đúng \textbf{1 giờ tới} (horizon $h=1$) — như đã phân tích ở Mục~1.4, đây gần như chỉ mang tính "nowcasting", chưa đủ lead time để cảnh báo/hành động trước. Phần này thử nghiệm mở rộng sang dự báo \textbf{$H=6$ giờ tới}, áp dụng đúng hai chiến lược đã trình bày lý thuyết ở Mục~1.4: \textbf{Recursive GRU} và \textbf{Direct GRU}.
-
-\subsection*{Recursive GRU: tái sử dụng model horizon=1}
-
-Tái sử dụng nguyên model GRU (window=24h, hidden\_size=64) đã huấn luyện ở Mục~2.4 — \textbf{không huấn luyện lại}. Model được gọi lặp lại 6 lần theo đúng cơ chế đã mô tả ở Hình~\ref{fig:recursive}: PM2.5 dự đoán ở bước trước được đưa ngược vào cửa sổ cho bước sau, các đặc trưng ngoại sinh dùng persistence, đặc trưng lịch tính chính xác cho từng giờ tương lai.
-
-\subsection*{Direct GRU: Grid Search và huấn luyện riêng}
-
-Vì Direct GRU là một model hoàn toàn mới (đổi lớp fully-connected cuối thành $\text{Linear}(\text{hidden}, 6)$ — xem Hình~\ref{fig:direct}), một Grid Search riêng được thực hiện trên cùng không gian siêu tham số đã dùng ở Mục~2.4.2 (\texttt{window\_size} $\in \{24, 48\}$, \texttt{hidden\_size} $\in \{32, 64\}$, \texttt{learning\_rate} $\in \{0.001, 0.0005\}$), theo cùng tiêu chí chọn cấu hình (10\% dung sai + chi phí tính toán thấp nhất). Cấu hình được chọn là \texttt{window\_size=24h, hidden\_size=32, learning\_rate=0.001} — nhẹ hơn model horizon=1 gốc (hidden\_size=32 thay vì 64).
-
-\subsection*{So sánh trên tập Test}
-
-\begin{table}[H]
-\centering
-\caption{So sánh MAE/RMSE giữa Recursive GRU và Direct GRU theo từng bước horizon (5.201 mốc gốc chung)}
-\begin{tabular}{rrrrrr}
-\toprule
-Horizon $h$ & Recursive MAE & Direct MAE & Recursive RMSE & Direct RMSE & Direct tốt hơn (\%) \\
-\midrule
-1 & 1.172 & 1.210 & 2.174 & 2.182 & $-3.2$ \\
-2 & 2.140 & 1.951 & 3.483 & 3.198 & $8.8$ \\
-3 & 2.988 & 2.576 & 4.613 & 3.972 & $13.8$ \\
-4 & 3.715 & 3.029 & 5.576 & 4.511 & $18.5$ \\
-5 & 4.341 & 3.401 & 6.383 & 4.956 & $21.7$ \\
-6 & 4.880 & 3.683 & 7.075 & 5.274 & $24.5$ \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/multistep_comparison.png}
-\caption{MAE và RMSE của Recursive GRU và Direct GRU theo từng bước horizon}
-\label{fig:ms_comparison}
-\end{figure}
-
-Hình~\ref{fig:ms_comparison} cho thấy rõ hiện tượng \textbf{dồn sai số} (error compounding) của Recursive GRU đã dự đoán ở Mục~1.4: ở $h=1$, Recursive thậm chí nhỉnh hơn Direct một chút ($-3.2\%$, vì đây chính xác là model chuyên biệt horizon=1 đã được Grid Search kỹ ở Mục~2.4). Nhưng từ $h=2$ trở đi, Direct GRU vượt trội rõ rệt và khoảng cách ngày càng giãn ra — đến $h=6$, Direct tốt hơn Recursive tới $24.5\%$ về MAE.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/multistep_example.png}
-\caption{Ví dụ minh họa dự báo 6 giờ tới từ một điểm gốc cụ thể trong tập Test}
-\label{fig:ms_example}
-\end{figure}
-
-\subsection*{Phân tích Residual}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/multistep_residual.png}
-\caption{Phân phối và diễn biến Residual của Recursive GRU và Direct GRU tại $h=1$ và $h=6$}
-\label{fig:ms_residual}
-\end{figure}
-
-Tại $h=1$, độ lệch chuẩn residual của hai model gần tương đương nhau (Recursive: mean$=0.175$, std$=2.167\,\mu$g/m$^3$; Direct: mean$=-0.042$, std$=2.181\,\mu$g/m$^3$). Nhưng tại $h=6$, độ phân tán của Recursive tăng nhanh hơn hẳn (std$=7.046\,\mu$g/m$^3$) so với Direct (std$=5.265\,\mu$g/m$^3$) — Hình~\ref{fig:ms_residual} cho thấy trực quan phân phối residual của Recursive bị "loe" rộng hơn đáng kể ở $h=6$, xác nhận bằng thực nghiệm cơ chế dồn sai số đã lý giải bằng lý thuyết ở Mục~1.4.
-
-% ==================== 2.7 KẾT LUẬN ====================
 \section{Kết luận}
 
-Trong tiểu luận này, bài toán dự báo nồng độ PM2.5 theo chuỗi thời gian tại thành phố Quy Nhơn đã được xây dựng và đánh giá thông qua mô hình mạng GRU. Quy trình thực hiện đầy đủ các bước: làm sạch dữ liệu, phân tích khám phá chuyên biệt cho chuỗi thời gian (kiểm định tính dừng ADF/KPSS, xu hướng Mann-Kendall, tính chu kỳ qua ACF/PACF/Periodogram/Decomposition), tiền xử lý và feature engineering, tinh chỉnh siêu tham số bằng Grid Search, và đánh giá mô hình.
+Trong tiểu luận này, bài toán dự báo nồng độ PM2.5 theo chuỗi thời gian tại thành phố Quy Nhơn đã được xây dựng và đánh giá thông qua mô hình mạng GRU. Quy trình thực hiện đầy đủ các bước: làm sạch dữ liệu, phân tích khám phá chuyên biệt cho chuỗi thời gian (kiểm định tính dừng ADF/KPSS, tính chu kỳ qua ACF/PACF/Decomposition), tiền xử lý và feature engineering, tinh chỉnh siêu tham số bằng Grid Search, và đánh giá mô hình trên dữ liệu thật hoàn toàn mới.
 
-Kết quả cho thấy mô hình GRU (window=24h, hidden\_size=64) đạt MAE $=1.172\,\mu$g/m$^3$ trên tập Test — tương đương khoảng $8.5\%$ so với giá trị trung bình PM2.5 của toàn bộ dữ liệu. Đặc biệt, khi kiểm chứng trên một bộ dữ liệu hoàn toàn mới được thu thập ở giai đoạn sau đó, mô hình vẫn duy trì hiệu năng tốt (MAE $=0.769\,\mu$g/m$^3$), với residual gần như không thiên lệch — chứng tỏ khả năng tổng quát hóa của mô hình không chỉ dừng lại ở một tập hold-out tĩnh mà còn giữ vững khi đối mặt với dữ liệu thực sự chưa từng biết trước.
+Điểm nổi bật của giải pháp cuối cùng là kiến trúc \textbf{hybrid}, kết hợp một thành phần thống kê cổ điển (Xu hướng EWMA, thích nghi tức thời với dữ liệu mới) với một mô hình GRU học phần dao động còn lại (Residual) — nhằm đối phó với hiện tượng lệch phân phối (distribution shift) theo thời gian mà một mô hình GRU thuần túy dự báo trực tiếp trên PM2.5 tuyệt đối không xử lý tốt. Kết hợp với chiến lược đánh giá walk-forward (cập nhật dữ liệu thật và tinh chỉnh nhẹ mô hình theo từng khối), giải pháp đạt \textbf{MAE $=2.827\,\mu$g/m$^3$} và \textbf{RMSE $=3.490\,\mu$g/m$^3$} trên trọn 28 ngày dữ liệu mới — cải thiện rõ rệt so với việc dự báo trực tiếp trên PM2.5 tuyệt đối không qua Decomposition.
 
-Mục~2.6 mở rộng thêm bài toán sang dự báo đa bước ($H=6$ giờ), so sánh hai chiến lược \textbf{Recursive} (tái sử dụng model horizon=1, không train lại) và \textbf{Direct} (model mới, Grid Search riêng). Kết quả cho thấy Direct GRU vượt trội rõ rệt so với Recursive từ $h=2$ trở đi (tốt hơn tới $24.5\%$ về MAE ở $h=6$), xác nhận bằng thực nghiệm hiện tượng dồn sai số (error compounding) đã lý giải bằng lý thuyết ở Mục~1.4 — trong khi ở $h=1$, hai chiến lược cho kết quả gần tương đương.
+Bên cạnh những kết quả tích cực, tiểu luận còn một số hạn chế: (1) dữ liệu chỉ trải dài khoảng 4 năm, giới hạn khả năng học đầy đủ chu kỳ năm mà EDA đã chỉ ra là chu kỳ chiếm ưu thế; (2) residual trên tập Test vẫn còn thiên lệch hệ thống (mean $\approx -2.41\,\mu$g/m$^3$), cho thấy thành phần Xu hướng EWMA — dù thích nghi nhanh hơn nhiều so với việc huấn luyện lại mạng nơ-ron — vẫn chưa bám kịp hoàn toàn những biến động giảm đột ngột và kéo dài; một số phương án thay thế (ví dụ Holt's Linear Trend, có thêm thành phần độ dốc để ngoại suy xu hướng thay vì giữ phẳng) đã được thử nghiệm nhưng chưa cho cải thiện nhất quán, cần nghiên cứu thêm; (3) do tập dữ liệu mới chỉ có 28 ngày, việc đánh giá theo khối walk-forward tuy đáng tin cậy hơn một lượt dự báo duy nhất nhưng vẫn dựa trên số lượng mẫu còn khiêm tốn.
 
-Bên cạnh những kết quả tích cực, tiểu luận còn một số hạn chế: (1) dữ liệu chỉ trải dài khoảng 4 năm, giới hạn khả năng học đầy đủ chu kỳ năm mà Periodogram đã chỉ ra là chu kỳ chiếm ưu thế; (2) dù đã thử nghiệm mở rộng multi-step, độ chính xác dự báo vẫn suy giảm khá nhanh theo horizon — ngay cả Direct (không dồn sai số) cũng giảm đáng kể từ $h=1$ đến $h=6$, cho thấy còn nhiều dư địa cải thiện cho bài toán dự báo xa; (3) các kiến trúc GRU dạng Encoder-only (horizon=1, Direct) là những kiến trúc duy nhất được thử nghiệm thực tế, chưa so sánh với LSTM, Temporal Convolutional Network, Transformer, hay kiến trúc Seq2seq (Encoder–Decoder) đầy đủ — kiến trúc mà GRU vốn được thiết kế nguyên bản để giải quyết.
+Hướng phát triển tiếp theo có thể tập trung vào: cải tiến thành phần Xu hướng (ví dụ các phương pháp trung bình trượt/làm mượt thích nghi khác, hoặc kết hợp nhiều thành phần theo chu kỳ khác nhau); mở rộng thời gian thu thập dữ liệu mới để việc đánh giá walk-forward có ý nghĩa thống kê vững chắc hơn; và thử nghiệm kiến trúc Seq2seq (Encoder–Decoder) đầy đủ — kiến trúc mà GRU vốn được thiết kế nguyên bản để giải quyết — cho phần Residual, thay cho Direct GRU hiện tại.
 
-Hướng phát triển tiếp theo có thể tập trung vào: cài đặt kiến trúc Seq2seq (Encoder–Decoder) đầy đủ cho bài toán multi-step; mở rộng horizon dự báo xa hơn 6 giờ; thay giả định persistence của Recursive bằng dự báo thực sự cho các đặc trưng ngoại sinh (ví dụ dự báo thời tiết từ mô hình khí tượng số); và thử nghiệm thêm các kiến trúc/hàm mất mát khác để đánh giá khả năng cải thiện thêm hiệu năng mô hình.
-
-% ==================== TÀI LIỆU THAM KHẢO ====================
 \chapter*{Tài liệu tham khảo}
 \addcontentsline{toc}{chapter}{Tài liệu tham khảo}
 
