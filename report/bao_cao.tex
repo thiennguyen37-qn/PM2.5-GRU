@@ -650,10 +650,10 @@ Khác với WHO và QCVN — mỗi chuẩn chỉ đưa ra một ngưỡng nhị 
 % ==================== 2.3 TIỀN XỬ LÝ ====================
 \section{Tiền xử lý dữ liệu}
 
-Nồng độ PM2.5 theo thời gian có thể trải qua hiện tượng lệch phân phối (distribution shift) — nền ô nhiễm ở một giai đoạn có thể khác biệt đáng kể so với giai đoạn huấn luyện trước đó — mà một mạng nơ-ron huấn luyện một lần rồi giữ cố định trọng số khó thích nghi kịp. Giải pháp được xây dựng theo kiến trúc \textbf{hybrid}, kết hợp hai thành phần bổ trợ cho nhau:
+Nồng độ PM2.5 theo thời gian có thể trải qua hiện tượng lệch phân phối (distribution shift) — xu hướng ô nhiễm ở một giai đoạn có thể khác biệt đáng kể so với giai đoạn huấn luyện trước đó — mà một mạng nơ-ron huấn luyện một lần rồi giữ cố định trọng số khó thích nghi kịp. Giải pháp được xây dựng theo kiến trúc \textbf{hybrid}, kết hợp hai thành phần bổ trợ cho nhau:
 
 \begin{itemize}
-    \item Một thành phần thống kê cổ điển — \textbf{EWMA} (Exponentially Weighted Moving Average) — ước lượng xu hướng/nền hiện tại của chuỗi PM2.5 bằng trung bình có trọng số giảm dần theo cấp số nhân đối với các quan sát càng cũ càng ít quan trọng. Vì được tính trực tiếp từ dữ liệu chứ không qua huấn luyện bằng gradient, thành phần này có thể cập nhật gần như tức thời mỗi khi có thêm quan sát thật mới, bám theo sự thay đổi của nền nhanh hơn nhiều so với việc huấn luyện lại mạng nơ-ron.
+    \item Một thành phần thống kê cổ điển — \textbf{EWMA} (Exponentially Weighted Moving Average) — ước lượng xu hướng hiện tại của chuỗi PM2.5 bằng trung bình có trọng số giảm dần theo cấp số nhân đối với các quan sát càng cũ càng ít quan trọng. Vì được tính trực tiếp từ dữ liệu chứ không qua huấn luyện bằng gradient, thành phần này có thể cập nhật gần như tức thời mỗi khi có thêm quan sát thật mới, bám theo sự thay đổi của xu hướng nhanh hơn nhiều so với việc huấn luyện lại mạng nơ-ron.
     \item Mô hình \textbf{Direct GRU} (đã trình bày ở Mục~1.4) — không còn học trực tiếp PM2.5 tuyệt đối, mà học phần dao động ngắn hạn còn lại sau khi đã trừ đi thành phần xu hướng nói trên.
 \end{itemize}
 
@@ -701,18 +701,20 @@ Dựa trên kết quả phân tích tương quan ở Mục~2.2 (Correlation Heat
 
 \subsection*{Gộp dữ liệu theo ngày}
 
-Ở mức dữ liệu theo giờ, khi horizon dự báo được kéo dài (nhiều giờ đến nhiều ngày tới), sai số có xu hướng tăng nhanh và mô hình trở nên nhạy cảm với nhiễu ngắn hạn giữa các giờ liên tiếp. Vì vậy, toàn bộ dữ liệu (cả tập huấn luyện \texttt{cleaned\_data.csv} lẫn tập dữ liệu mới dùng để đánh giá) được \textbf{gộp về mức trung bình ngày}. Phép gộp này làm mượt các dao động ngắn hạn trong ngày, đồng thời quy đổi horizon dự báo từ đơn vị giờ sang đơn vị ngày — giúp bài toán dự báo nhiều bước trở nên khả thi và ổn định hơn.
+Ở mức dữ liệu theo giờ, khi horizon dự báo được kéo dài, sai số có xu hướng tăng nhanh và mô hình trở nên nhạy cảm với nhiễu ngắn hạn giữa các giờ liên tiếp. Vì vậy, toàn bộ dữ liệu được \textbf{gộp về mức trung bình ngày}. Phép gộp này làm mượt các dao động ngắn hạn trong ngày, đồng thời quy đổi horizon dự báo từ đơn vị giờ sang đơn vị ngày — giúp bài toán dự báo nhiều bước trở nên khả thi và ổn định hơn.
 
 \subsection*{Tách xu hướng và phần dư (Decomposition)}
 
 Cụ thể, chuỗi PM2.5 theo ngày được \textbf{phân tách thành hai thành phần} trước khi đưa vào mô hình:
 
 \begin{itemize}
-    \item \textbf{Xu hướng (Trend)}: ước lượng bằng EWMA nhân quả — chỉ sử dụng các quan sát trong quá khứ, với độ dài chu kỳ (span) $=7$ ngày.
-    \item \textbf{Phần dư (Residual)}: phần chênh lệch còn lại giữa giá trị PM2.5 thực tế và Xu hướng — phản ánh các dao động ngắn hạn quanh nền, có tính ổn định cao hơn nhiều so với chuỗi PM2.5 gốc.
+    \item \textbf{Xu hướng (Trend)}: ước lượng bằng EWMA nhân quả — chỉ sử dụng các quan sát trong quá khứ, với độ dài chu kỳ $=7$ ngày.
+    \item \textbf{Phần dư (Residual)}: phần chênh lệch còn lại giữa giá trị PM2.5 thực tế và Xu hướng — phản ánh các dao động ngắn hạn quanh Xu hướng, có tính ổn định cao hơn nhiều so với chuỗi PM2.5 gốc.
 \end{itemize}
 
-Mô hình GRU được huấn luyện để học và dự báo trực tiếp \textbf{thành phần Residual} (thay cho PM2.5 tuyệt đối) ở cả đầu vào lẫn đầu ra. Khi tạo dự báo, giá trị PM2.5 cuối cùng được khôi phục bằng cách cộng Residual do mô hình dự báo với giá trị Xu hướng gần nhất đã biết.
+Mô hình GRU được huấn luyện để học và dự báo trực tiếp \textbf{thành phần Residual} ở cả đầu vào lẫn đầu ra. Khi tạo dự báo, giá trị PM2.5 cuối cùng được khôi phục bằng cách cộng Residual do mô hình dự báo với giá trị Xu hướng gần nhất đã biết.
+
+Cần lưu ý, Residual ở đây khác với Residual trong phân rã cổ điển ở Mục~2.2: vì chuỗi chỉ được tách thành hai thành phần Trend và Residual, phần dao động theo mùa không được tách riêng mà vẫn nằm gộp trong Residual. Mô hình GRU vì vậy phải tự học tính mùa vụ ẩn trong phần dao động này, được hỗ trợ một phần bởi đặc trưng chu kỳ thời gian trình bày ngay sau đây.
 
 \subsection*{Mã hóa chu kỳ thời gian}
 
