@@ -589,18 +589,19 @@ Vì đơn vị thời gian cơ sở giờ đây là ngày, đặc trưng lịch 
 
 Đặc trưng này giúp mô hình nắm bắt được tính mùa vụ của PM2.5 đã quan sát ở Mục~2.2 (nồng độ cao vào các tháng đầu năm, thấp vào mùa mưa giữa năm).
 
-\subsection*{Chia tập Pool (Train) / Test}
+\subsection*{Chia tập Train / Validate / Test}
 
-Tập Test là một \textbf{bộ dữ liệu hoàn toàn mới}, thu thập ở giai đoạn sau đó — mô phỏng sát tình huống triển khai thực tế, khi mô hình phải dự báo cho dữ liệu chưa từng "nhìn thấy" trong suốt quá trình phát triển. Phần dữ liệu còn lại — gọi là \textbf{Pool} — được dùng chung cho cả huấn luyện lẫn đánh giá nội bộ bằng sliding-fold cross-validation (Mục~2.4.2):
+Tập Test là một \textbf{bộ dữ liệu hoàn toàn mới}, thu thập ở giai đoạn sau đó — mô phỏng sát tình huống triển khai thực tế, khi mô hình phải dự báo cho dữ liệu chưa từng "nhìn thấy" trong suốt quá trình phát triển. Phần dữ liệu còn lại (gọi là \textbf{Pool}) được chia tiếp theo trình tự thời gian thành hai phần tách biệt hoàn toàn: \textbf{Train} (phần đầu, dùng để tạo các sequence huấn luyện) và \textbf{Validate} (300 ngày cuối của Pool, không chồng lấn với bất kỳ sequence huấn luyện nào) — dùng cho Grid Search và early-stopping bằng sliding-fold cross-validation (Mục~2.4.2). Việc tách Validate ra khỏi Train ngay từ đầu là điều kiện bắt buộc để validation loss thực sự phản ánh khả năng tổng quát hóa của mô hình, thay vì chỉ đo lại phần dữ liệu mô hình đã được học.
 
 \begin{table}[H]
 \centering
-\caption{Phân chia Pool / Test (dữ liệu theo ngày)}
+\caption{Phân chia Train / Validate / Test (dữ liệu theo ngày)}
 \begin{tabular}{lrll}
 \toprule
 Tập & Số ngày & Từ & Đến \\
 \midrule
-Pool & 1.453 & 2022-08-04 & 2026-07-26 \\
+Train & 1.153 & 2022-08-04 & 2025-09-29 \\
+Validate & 300 & 2025-09-30 & 2026-07-26 \\
 Test & 28 & 2026-07-27 & 2026-08-23 \\
 \bottomrule
 \end{tabular}
@@ -618,32 +619,32 @@ Từ dữ liệu đã chuẩn hóa, các cặp $(X, y)$ được tạo bằng k�
 
 \subsection*{Kiến trúc GRU: Direct Multi-output}
 
-Mô hình giữ nguyên khối GRU 2 lớp (dropout $0.2$) đã trình bày ở Mục~1.4, nhưng lớp fully-connected cuối được đổi thành ánh xạ trạng thái ẩn tại bước thời gian cuối cùng thành \textbf{7 giá trị dự báo đồng thời} thay vì 1 giá trị — đúng chiến lược \textbf{Direct GRU} đã trình bày lý thuyết ở Mục~1.4. Lựa chọn này dựa trên cơ sở: bằng cách dự báo trọn horizon trong một lượt forward duy nhất, Direct GRU không dùng giá trị dự báo của chính nó làm đầu vào cho bước kế tiếp, nên tránh được hiện tượng \textbf{dồn sai số} (error compounding) — hạn chế cố hữu của chiến lược Recursive khi horizon tăng lên. Với 9 đặc trưng đầu vào và \texttt{hidden\_size}$=64$, mô hình có tổng cộng \textbf{39.815 tham số có thể huấn luyện}.
+Mô hình giữ nguyên khối GRU 2 lớp (dropout $0.2$) đã trình bày ở Mục~1.4, nhưng lớp fully-connected cuối được đổi thành ánh xạ trạng thái ẩn tại bước thời gian cuối cùng thành \textbf{7 giá trị dự báo đồng thời} thay vì 1 giá trị — đúng chiến lược \textbf{Direct GRU} đã trình bày lý thuyết ở Mục~1.4. Lựa chọn này dựa trên cơ sở: bằng cách dự báo trọn horizon trong một lượt forward duy nhất, Direct GRU không dùng giá trị dự báo của chính nó làm đầu vào cho bước kế tiếp, nên tránh được hiện tượng \textbf{dồn sai số} (error compounding) — hạn chế cố hữu của chiến lược Recursive khi horizon tăng lên. Với 9 đặc trưng đầu vào và \texttt{hidden\_size}$=32$ (giá trị được chọn qua Grid Search ở mục kế tiếp), mô hình có tổng cộng \textbf{10.695 tham số có thể huấn luyện}.
 
 \subsection*{Tinh chỉnh siêu tham số}
 
-Vì Pool được dùng chung cho cả huấn luyện lẫn đánh giá, một cơ chế \textbf{sliding-fold cross-validation} được áp dụng: Pool được quét bằng nhiều fold $(X, y)$ liên tiếp, mỗi fold gồm 28 ngày làm đầu vào và 7 ngày kế tiếp làm mục tiêu, dịch đi đúng 7 ngày (bằng horizon) sau mỗi fold để phần mục tiêu giữa các fold không chồng lấn — thu được \textbf{203 fold} trên toàn bộ Pool. Validation loss (MAE, thang chuẩn hóa) dùng cho Grid Search và early-stopping được tính trung bình trên toàn bộ 203 fold này, thay vì dựa trên một khối dữ liệu cố định duy nhất — giúp tín hiệu đánh giá ổn định và đáng tin cậy hơn đáng kể.
+Để việc chọn siêu tham số và early-stopping có một tín hiệu đánh giá đáng tin cậy nhưng vẫn tách biệt hoàn toàn khỏi dữ liệu huấn luyện, một cơ chế \textbf{sliding-fold cross-validation} được áp dụng riêng trên tập Validate (không dùng Train): tập Validate được quét bằng nhiều fold $(X, y)$ liên tiếp, mỗi fold gồm 28 ngày làm đầu vào và 7 ngày kế tiếp làm mục tiêu, dịch đi đúng 7 ngày (bằng horizon) sau mỗi fold để phần mục tiêu giữa các fold không chồng lấn — thu được \textbf{38 fold}. Validation loss (MAE, thang chuẩn hóa) dùng cho Grid Search và early-stopping được tính trung bình trên toàn bộ 38 fold này, thay vì dựa trên một khối dữ liệu cố định duy nhất — giúp tín hiệu đánh giá ổn định và đáng tin cậy hơn một khối 7 ngày đơn lẻ, đồng thời vẫn phản ánh đúng khả năng tổng quát hóa vì không chồng lấn với Train.
 
 Grid Search được thực hiện trên không gian hai siêu tham số \texttt{hidden\_size} $\in \{16, 32, 64\}$ và \texttt{learning\_rate} $\in \{0.001, 0.0005\}$ (\texttt{window\_size}$=28$ ngày và horizon$=7$ ngày giữ cố định) — mỗi cấu hình huấn luyện tối đa 20 epoch với early stopping (patience$=5$).
 
 \begin{table}[H]
 \centering
-\caption{Kết quả Grid Search siêu tham số (val\_loss trung bình trên 203 fold, sắp xếp tăng dần)}
+\caption{Kết quả Grid Search siêu tham số (val\_loss trung bình trên 38 fold Validate, sắp xếp tăng dần)}
 \begin{tabular}{rrr}
 \toprule
 hidden\_size & learning\_rate & val\_loss (MAE, scaled) \\
 \midrule
-64 & 0.0005 & 0.08665 \\
-32 & 0.0010 & 0.08720 \\
-64 & 0.0010 & 0.08731 \\
-16 & 0.0010 & 0.08735 \\
-32 & 0.0005 & 0.08820 \\
-16 & 0.0005 & 0.08930 \\
+32 & 0.0010 & 0.08452 \\
+32 & 0.0005 & 0.08492 \\
+64 & 0.0010 & 0.08517 \\
+64 & 0.0005 & 0.08532 \\
+16 & 0.0010 & 0.08543 \\
+16 & 0.0005 & 0.08690 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Cấu hình được chọn là cấu hình có validation loss thấp nhất: \texttt{hidden\_size}$=64$, \texttt{learning\_rate}$=0.0005$.
+Cấu hình được chọn là cấu hình có validation loss thấp nhất: \texttt{hidden\_size}$=32$, \texttt{learning\_rate}$=0.001$.
 
 \subsection*{Huấn luyện mô hình cuối cùng}
 
@@ -651,12 +652,12 @@ Với cấu hình đã chọn, mô hình được huấn luyện lại với ng�
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.75\textwidth]{figures/hybrid_learning_curve.png}
-\caption{Learning curve — GRU Residual (hidden\_size=64, horizon=7 ngày)}
+\includegraphics[width=\textwidth]{figures/hybrid_learning_curve.png}
+\caption{Learning curve — GRU Residual (hidden\_size=32, horizon=7 ngày): toàn bộ quá trình (trái) và phóng to từ epoch 3 (phải), đường chấm xám đánh dấu epoch tốt nhất}
 \label{fig:hybrid_learning_curve}
 \end{figure}
 
-Quá trình huấn luyện chạy hết ngân sách 40 epoch mà không kích hoạt early stopping, đạt validation loss tốt nhất $\approx 0.0848$ (thang chuẩn hóa) tại epoch 39 (Hình~\ref{fig:hybrid_learning_curve}). Nhờ được tính trung bình trên 203 fold, đường Validation Loss giảm khá mượt và bám sát xu hướng của Train Loss trong suốt quá trình huấn luyện.
+Vì Validate lúc này là một tập tách biệt thật sự khỏi Train, đường Validation Loss ở Hình~\ref{fig:hybrid_learning_curve} thể hiện đúng một hành vi huấn luyện điển hình. Do hai epoch đầu tiên giảm rất mạnh (từ $\approx 0.41$ xuống $\approx 0.10$), panel bên trái tuy cho thấy toàn cảnh quá trình huấn luyện nhưng lại nén phần diễn biến sau đó vào một dải rất hẹp; panel bên phải (phóng to từ epoch 3) bộc lộ rõ diễn biến thật: Validation Loss tiếp tục giảm cùng nhịp với Train Loss thêm vài epoch, đạt tốt nhất $\approx 0.0852$ (thang chuẩn hóa) tại epoch 13, sau đó chững lại và dao động tăng nhẹ trong khi Train Loss vẫn tiếp tục giảm đều — dấu hiệu mô hình bắt đầu overfit lên tập Train. Cơ chế early stopping (patience$=8$) phát hiện đúng xu hướng này và dừng huấn luyện ở epoch 21, khôi phục lại trọng số tốt nhất tại epoch 13.
 
 \section{Đánh giá mô hình: Walk-forward trên dữ liệu mới}
 
@@ -671,12 +672,12 @@ Vì tập Test là dữ liệu thật hoàn toàn mới và mô hình dự báo 
 \toprule
 Khoảng & Thời gian & MAE ($\mu$g/m$^3$) & RMSE ($\mu$g/m$^3$) \\
 \midrule
-1 & 2026-07-27 -- 2026-08-02 & 2.975 & 3.636 \\
-2 & 2026-08-03 -- 2026-08-09 & 4.379 & 5.158 \\
-3 & 2026-08-10 -- 2026-08-16 & 2.232 & 2.580 \\
-4 & 2026-08-17 -- 2026-08-23 & 2.306 & 2.574 \\
+1 & 2026-07-27 -- 2026-08-02 & 2.735 & 3.624 \\
+2 & 2026-08-03 -- 2026-08-09 & 4.273 & 5.106 \\
+3 & 2026-08-10 -- 2026-08-16 & 1.817 & 2.184 \\
+4 & 2026-08-17 -- 2026-08-23 & 2.312 & 2.556 \\
 \midrule
-\textbf{Tổng hợp (28 ngày)} & & \textbf{2.973} & \textbf{3.644} \\
+\textbf{Tổng hợp (28 ngày)} & & \textbf{2.784} & \textbf{3.553} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -699,15 +700,15 @@ Khoảng thời gian 2 (03/08 -- 09/08) có sai số cao nhất trong 4 khoảng
 \label{fig:hybrid_resid}
 \end{figure}
 
-Residual tổng hợp trên toàn bộ 28 ngày Test có \textbf{mean $= -2.551\,\mu$g/m$^3$} và \textbf{std $= 2.602\,\mu$g/m$^3$} (Hình~\ref{fig:hybrid_resid}). Giá trị mean âm cho thấy mô hình vẫn còn thiên lệch (bias) hệ thống theo hướng dự báo cao hơn thực tế — hệ quả trực tiếp của việc nền PM2.5 trong giai đoạn Test thấp hơn đáng kể so với những gì mô hình quan sát được trong phần lớn dữ liệu huấn luyện. So với việc dự báo trực tiếp trên PM2.5 tuyệt đối (không qua Decomposition), độ lệch này đã được thu hẹp đáng kể, nhưng chưa được loại bỏ hoàn toàn — cho thấy đây là một hướng còn có thể cải thiện thêm.
+Residual tổng hợp trên toàn bộ 28 ngày Test có \textbf{mean $= -2.364\,\mu$g/m$^3$} và \textbf{std $= 2.653\,\mu$g/m$^3$} (Hình~\ref{fig:hybrid_resid}). Giá trị mean âm cho thấy mô hình vẫn còn thiên lệch (bias) hệ thống theo hướng dự báo cao hơn thực tế — hệ quả trực tiếp của việc nền PM2.5 trong giai đoạn Test thấp hơn đáng kể so với những gì mô hình quan sát được trong phần lớn dữ liệu huấn luyện. So với việc dự báo trực tiếp trên PM2.5 tuyệt đối (không qua Decomposition), độ lệch này đã được thu hẹp đáng kể, nhưng chưa được loại bỏ hoàn toàn — cho thấy đây là một hướng còn có thể cải thiện thêm.
 
 \section{Kết luận}
 
 Trong tiểu luận này, bài toán dự báo nồng độ PM2.5 theo chuỗi thời gian tại thành phố Quy Nhơn đã được xây dựng và đánh giá thông qua mô hình mạng GRU. Quy trình thực hiện đầy đủ các bước: làm sạch dữ liệu, phân tích khám phá chuyên biệt cho chuỗi thời gian (xu hướng, tính chu kỳ qua ACF/PACF/Decomposition), tiền xử lý và feature engineering, tinh chỉnh siêu tham số bằng Grid Search, và đánh giá mô hình trên dữ liệu thật hoàn toàn mới.
 
-Điểm nổi bật của giải pháp cuối cùng là kiến trúc \textbf{hybrid}, kết hợp một thành phần thống kê cổ điển (Xu hướng EWMA, thích nghi tức thời với dữ liệu mới) với một mô hình GRU học phần dao động còn lại (Residual) — nhằm đối phó với hiện tượng lệch phân phối (distribution shift) theo thời gian mà một mô hình GRU thuần túy dự báo trực tiếp trên PM2.5 tuyệt đối không xử lý tốt. Kết hợp với chiến lược đánh giá walk-forward (cập nhật dữ liệu thật và tinh chỉnh nhẹ mô hình theo từng khoảng thời gian), giải pháp đạt \textbf{MAE $=2.973\,\mu$g/m$^3$} và \textbf{RMSE $=3.644\,\mu$g/m$^3$} trên trọn 28 ngày dữ liệu mới — cải thiện rõ rệt so với việc dự báo trực tiếp trên PM2.5 tuyệt đối không qua Decomposition.
+Điểm nổi bật của giải pháp cuối cùng là kiến trúc \textbf{hybrid}, kết hợp một thành phần thống kê cổ điển (Xu hướng EWMA, thích nghi tức thời với dữ liệu mới) với một mô hình GRU học phần dao động còn lại (Residual) — nhằm đối phó với hiện tượng lệch phân phối (distribution shift) theo thời gian mà một mô hình GRU thuần túy dự báo trực tiếp trên PM2.5 tuyệt đối không xử lý tốt. Kết hợp với chiến lược đánh giá walk-forward (cập nhật dữ liệu thật và tinh chỉnh nhẹ mô hình theo từng khoảng thời gian), giải pháp đạt \textbf{MAE $=2.784\,\mu$g/m$^3$} và \textbf{RMSE $=3.553\,\mu$g/m$^3$} trên trọn 28 ngày dữ liệu mới — cải thiện rõ rệt so với việc dự báo trực tiếp trên PM2.5 tuyệt đối không qua Decomposition.
 
-Bên cạnh những kết quả tích cực, tiểu luận còn một số hạn chế: (1) dữ liệu chỉ trải dài khoảng 4 năm, giới hạn khả năng học đầy đủ chu kỳ năm mà EDA đã chỉ ra là chu kỳ chiếm ưu thế; (2) residual trên tập Test vẫn còn thiên lệch hệ thống (mean $\approx -2.55\,\mu$g/m$^3$), cho thấy thành phần Xu hướng EWMA — dù thích nghi nhanh hơn nhiều so với việc huấn luyện lại mạng nơ-ron — vẫn chưa bám kịp hoàn toàn những biến động giảm đột ngột và kéo dài; (3) do tập dữ liệu mới chỉ có 28 ngày, việc đánh giá theo từng khoảng thời gian walk-forward tuy đáng tin cậy hơn một lượt dự báo duy nhất nhưng vẫn dựa trên số lượng mẫu còn khiêm tốn.
+Bên cạnh những kết quả tích cực, tiểu luận còn một số hạn chế: (1) dữ liệu chỉ trải dài khoảng 4 năm, giới hạn khả năng học đầy đủ chu kỳ năm mà EDA đã chỉ ra là chu kỳ chiếm ưu thế; (2) residual trên tập Test vẫn còn thiên lệch hệ thống (mean $\approx -2.36\,\mu$g/m$^3$), cho thấy thành phần Xu hướng EWMA — dù thích nghi nhanh hơn nhiều so với việc huấn luyện lại mạng nơ-ron — vẫn chưa bám kịp hoàn toàn những biến động giảm đột ngột và kéo dài; (3) do tập dữ liệu mới chỉ có 28 ngày, việc đánh giá theo từng khoảng thời gian walk-forward tuy đáng tin cậy hơn một lượt dự báo duy nhất nhưng vẫn dựa trên số lượng mẫu còn khiêm tốn.
 
 Hướng phát triển tiếp theo có thể tập trung vào: cải tiến thành phần Xu hướng (ví dụ các phương pháp trung bình trượt/làm mượt thích nghi khác, hoặc kết hợp nhiều thành phần theo chu kỳ khác nhau); mở rộng thời gian thu thập dữ liệu mới để việc đánh giá walk-forward có ý nghĩa thống kê vững chắc hơn; và thử nghiệm kiến trúc Seq2seq (Encoder–Decoder) đầy đủ — kiến trúc mà GRU vốn được thiết kế nguyên bản để giải quyết — cho phần Residual, thay cho Direct GRU hiện tại.
 
