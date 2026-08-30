@@ -601,33 +601,22 @@ Hình~\ref{fig:ma} cho thấy các đường trung bình trượt 30 ngày và 9
 
 Hình~\ref{fig:decomp} trình bày kết quả phân rã cổ điển áp dụng trên chuỗi PM2.5 trung bình ngày, tách thành bốn thành phần theo thứ tự từ trên xuống: giá trị thực tế (Observed), Trend, Seasonal và Residual.
 
-Biểu đồ Observed lặp lại chính chuỗi đã thấy ở Hình~\ref{fig:lineplot}, dao động phổ biến trong khoảng 5--25~$\mu$g/m$^3$ và xen kẽ những đợt tăng vọt lên đến 35--40~$\mu$g/m$^3$ vào một vài thời điểm (đầu năm 2023, đầu năm 2025, giữa năm 2026) — các cực trị này rơi đúng vào giai đoạn đầu năm mà đường trung bình trượt ở Hình~\ref{fig:ma} đã chỉ ra là cao điểm ô nhiễm hàng năm.
+Biểu đồ giá trị thực tế lặp lại chính chuỗi đã thấy ở Hình~\ref{fig:lineplot}, dao động phổ biến trong khoảng 5--25~$\mu$g/m$^3$ và xen kẽ những đợt tăng vọt lên đến 35--40~$\mu$g/m$^3$ vào một vài thời điểm (đầu năm 2023, đầu năm 2025, giữa năm 2026) — các cực trị này rơi đúng vào giai đoạn đầu năm mà đường trung bình trượt ở Hình~\ref{fig:ma} đã chỉ ra là cao điểm ô nhiễm hàng năm.
 
 Thành phần Trend là một đường cong trơn, biến thiên rất chậm và chỉ trong biên độ hẹp 12--14.7~$\mu$g/m$^3$: giảm dần từ khoảng 14.1 (giữa năm 2022) xuống đáy $\approx 11.9$ (cuối năm 2023), sau đó tăng trở lại lên đỉnh $\approx 14.7$ (đầu năm 2025), rồi lại giảm về $\approx 13.1$ (cuối năm 2025) trước khi hồi phục nhẹ về cuối chuỗi quan sát. Đường Trend không tăng hay giảm đơn điệu mà chỉ dao động lên xuống quanh một nền chung khoảng 13~$\mu$g/m$^3$ — cho thấy PM2.5 tại khu vực khảo sát không có dấu hiệu ô nhiễm ngày càng nghiêm trọng (hay cải thiện) rõ rệt qua các năm, mà chỉ trải qua những đợt lên/xuống chậm, biên độ nhỏ, nằm ngoài phạm vi chu kỳ năm và chưa đủ cơ sở để coi là một xu hướng dài hạn thật sự.
 
 Ngược lại, thành phần Seasonal dao động trong khoảng $-8$ đến $+13$ và lặp lại đều đặn theo từng năm: đạt đỉnh dương (khoảng $+10$ đến $+13$) vào giai đoạn tháng 1--4, rồi xuống đáy âm (khoảng $-5$ đến $-8$) vào giai đoạn giữa năm (tháng 6--9) — hoàn toàn nhất quán với quy luật "tăng đầu năm, giảm giữa năm" đã quan sát được ở Hình~\ref{fig:ma} và sẽ còn thấy lại ở Seasonal Subseries Plot (Hình~\ref{fig:seasonal}) ngay sau đây. Đáng chú ý, biên độ dao động của thành phần Seasonal (xấp xỉ $\pm 13$) lớn hơn nhiều so với biên độ của Trend (chưa đến 3 đơn vị) — khẳng định tính chu kỳ theo năm mới là yếu tố chi phối chính hành vi dài hạn của PM2.5, chứ không phải một xu hướng trôi dạt.
 
-Cuối cùng, thành phần Residual dao động khá đều quanh mốc 0, phần lớn nằm trong khoảng $\pm 10$, nhưng thỉnh thoảng xuất hiện những đỉnh nhọn vượt 15--20~$\mu$g/m$^3$ (rõ nhất ở cuối tháng 2/2023 và đầu tháng 4/2025) trùng với các đợt tăng đột biến đã thấy ở biểu đồ Observed. Đây là phần biến động không được giải thích bởi Trend hay Seasonal, phản ánh các sự kiện ô nhiễm mang tính tức thời (điều kiện thời tiết bất lợi, hoạt động đốt theo mùa vụ...) — đúng là loại dao động ngắn hạn, khó đoán trước bằng thống kê cổ điển mà thành phần GRU trong kiến trúc hybrid ở Mục~2.3 được thiết kế để đảm nhiệm.
+Cuối cùng, thành phần Residual dao động khá đều quanh mốc 0, phần lớn nằm trong khoảng $\pm 10$, nhưng thỉnh thoảng xuất hiện những đỉnh nhọn vượt 15--20~$\mu$g/m$^3$ (rõ nhất ở cuối tháng 2/2023 và đầu tháng 4/2025) trùng với các đợt tăng đột biến đã thấy ở biểu đồ giá trị thực tế. Đây là phần biến động không được giải thích bởi Trend hay Seasonal, phản ánh các sự kiện ô nhiễm mang tính tức thời (điều kiện thời tiết bất lợi, hoạt động đốt theo mùa vụ...) — đúng là loại dao động ngắn hạn, khó đoán trước bằng thống kê cổ điển mà thành phần GRU trong kiến trúc hybrid ở Mục~2.3 được thiết kế để đảm nhiệm.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/pm25_seasonal_subseries.png}
+\includegraphics[width=0.65\textwidth]{figures/pm25_seasonal_subseries.png}
 \caption{Seasonal Subseries Plot: PM2.5 theo từng tháng (gộp tất cả các năm)}
 \label{fig:seasonal}
 \end{figure}
 
 Hình~\ref{fig:seasonal} cho thấy PM2.5 đạt đỉnh vào các tháng 1--4 (cao nhất ở tháng 4, trung bình $\approx$20~$\mu$g/m$^3$), giảm dần xuống mức thấp nhất vào các tháng 7--10 (trung bình $\approx$10--12~$\mu$g/m$^3$), rồi tăng nhẹ trở lại vào tháng 11--12. Kiểu biến động này phù hợp với đặc trưng khí hậu khu vực Nam Trung Bộ: các tháng đầu năm (gió mùa Đông Bắc, ít mưa) khiến bụi mịn tích tụ nhiều hơn, trong khi mùa mưa (tháng 7--10) giúp rửa trôi các hạt lơ lửng, làm giảm nồng độ PM2.5.
-
-\subsection*{Phân phối PM2.5 theo từng năm}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\textwidth]{figures/pm25_violin_year.png}
-\caption{Phân phối PM2.5 theo từng năm (Violin Plot)}
-\label{fig:violin}
-\end{figure}
-
-Hình~\ref{fig:violin} cho thấy giá trị trung vị/trung bình PM2.5 tương đối ổn định quanh 11--14~$\mu$g/m$^3$ trong giai đoạn 2022--2025, nhưng giá trị cực đại (đuôi phân phối) dao động thất thường và có xu hướng nới rộng qua các năm — từ khoảng 44~$\mu$g/m$^3$ (2022) lên 64~$\mu$g/m$^3$ (2023), giảm trở lại còn 36~$\mu$g/m$^3$ (2024), rồi vượt 70~$\mu$g/m$^3$ ở cả hai năm 2025 và 2026 — cho thấy dù mức nền không đổi nhiều nhưng những năm gần đây bắt đầu xuất hiện các đợt ô nhiễm đỉnh điểm với cường độ cao hơn hẳn so với 2022--2024. Riêng năm 2026 (dữ liệu mới tính đến tháng 7) có phân phối lệch cao hơn hẳn (trung vị $\approx$14.7) so với các năm trước; tuy nhiên cần lưu ý đây là năm chưa có đủ dữ liệu cả năm, nên tỷ trọng các tháng đầu năm — vốn có PM2.5 cao hơn theo Hình~\ref{fig:seasonal} — chiếm phần lớn có thể ảnh hưởng đến so sánh này.
 
 \subsection*{Ngưỡng an toàn theo chuẩn WHO và Quy chuẩn Việt Nam (QCVN)}
 
