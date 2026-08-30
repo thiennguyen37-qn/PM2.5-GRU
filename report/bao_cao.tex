@@ -729,7 +729,7 @@ Vì đơn vị thời gian cơ sở giờ đây là ngày, đặc trưng lịch 
 
 \subsection*{Chia tập Train / Validate / Test}
 
-Tập Test là một \textbf{bộ dữ liệu hoàn toàn mới}, thu thập ở giai đoạn sau đó — mô phỏng sát tình huống triển khai thực tế, khi mô hình phải dự báo cho dữ liệu chưa từng "nhìn thấy" trong suốt quá trình phát triển. Phần dữ liệu còn lại (gọi là \textbf{Pool}) được chia tiếp theo trình tự thời gian thành hai phần tách biệt hoàn toàn: \textbf{Train} (phần đầu, dùng để tạo các sequence huấn luyện) và \textbf{Validate} (300 ngày cuối của Pool, không chồng lấn với bất kỳ sequence huấn luyện nào) — dùng cho Grid Search và early-stopping bằng sliding-fold cross-validation (Mục~2.4.2). Việc tách Validate ra khỏi Train ngay từ đầu là điều kiện bắt buộc để validation loss thực sự phản ánh khả năng tổng quát hóa của mô hình, thay vì chỉ đo lại phần dữ liệu mô hình đã được học.
+Tập Test là một \textbf{bộ dữ liệu hoàn toàn mới}, thu thập ở giai đoạn sau đó — mô phỏng sát tình huống triển khai thực tế, khi mô hình phải dự báo cho dữ liệu chưa từng "nhìn thấy" trong suốt quá trình phát triển. Phần dữ liệu còn lại — \textbf{Pool} — được chia tiếp theo trình tự thời gian thành hai phần tách biệt hoàn toàn: \textbf{Train} và \textbf{Validate} — dùng cho Grid Search và early-stopping bằng sliding-fold cross-validation. Việc tách Validate ra khỏi Train ngay từ đầu là điều kiện bắt buộc để validation loss thực sự phản ánh khả năng tổng quát hóa của mô hình, thay vì chỉ đo lại phần dữ liệu mô hình đã được học.
 
 \begin{table}[H]
 \centering
@@ -749,17 +749,11 @@ Test & 28 & 2026-07-27 & 2026-08-23 \\
 
 Toàn bộ đặc trưng số (đã bao gồm thành phần Residual thay cho PM2.5 gốc) được chuẩn hóa về khoảng $[0,1]$ bằng \textbf{MinMaxScaler}. Scaler chỉ được \textit{fit} trên Pool, sau đó dùng để \textit{transform} tập Test — nhằm tránh rò rỉ thông tin thống kê (min/max) của Test vào quá trình huấn luyện.
 
-\subsection*{Tạo cặp \texorpdfstring{$(X, y)$}{(X, y)} cho dự báo đa bước}
-
-Từ dữ liệu đã chuẩn hóa, các cặp $(X, y)$ được tạo bằng kỹ thuật sliding window (Mục~1.1) với \texttt{window\_size} $=28$ ngày và horizon $=7$ ngày. Độ dài cửa sổ quan sát này được xác định bằng thực nghiệm so sánh (7, 14 và 28 ngày, giữ nguyên toàn bộ phần còn lại của pipeline) — cửa sổ 28 ngày cho MAE và RMSE tổng hợp thấp nhất trên tập Test. Với mỗi vị trí $i$, $X_i$ là ma trận gồm 28 bước thời gian $\times$ 9 đặc trưng (PM10, PM2.5 đã thay bằng Residual, Carbon Monoxide, Nitrogen Dioxide, Sulphur Dioxide, Ozone, Aerosol Optical Depth, month\_sin, month\_cos), còn $y_i$ là một \textbf{vector 7 giá trị} — Residual của PM2.5 tại 7 ngày tiếp theo, được dự báo đồng thời trong một lượt duy nhất.
-
 \section{Xây dựng mô hình}
 
-\subsection*{Kiến trúc GRU: Direct Multi-output}
+\subsection*{Kiến trúc GRU và Tinh chỉnh siêu tham số}
 
-Mô hình giữ nguyên khối GRU 2 lớp (dropout $0.2$) đã trình bày ở Mục~1.4, nhưng lớp fully-connected cuối được đổi thành ánh xạ trạng thái ẩn tại bước thời gian cuối cùng thành \textbf{7 giá trị dự báo đồng thời} thay vì 1 giá trị — đúng chiến lược \textbf{Direct GRU} đã trình bày lý thuyết ở Mục~1.4. Lựa chọn này dựa trên cơ sở: bằng cách dự báo trọn horizon trong một lượt forward duy nhất, Direct GRU không dùng giá trị dự báo của chính nó làm đầu vào cho bước kế tiếp, nên tránh được hiện tượng \textbf{dồn sai số} (error compounding) — hạn chế cố hữu của chiến lược Recursive khi horizon tăng lên. Với 9 đặc trưng đầu vào và \texttt{hidden\_size}$=32$ (giá trị được chọn qua Grid Search ở mục kế tiếp), mô hình có tổng cộng \textbf{10.695 tham số có thể huấn luyện}.
-
-\subsection*{Tinh chỉnh siêu tham số}
+Mô hình giữ nguyên khối GRU 2 lớp đã trình bày ở Mục~1.4, nhưng lớp fully-connected cuối được đổi thành ánh xạ trạng thái ẩn tại bước thời gian cuối cùng thành \textbf{7 giá trị dự báo đồng thời} thay vì 1 giá trị — đúng chiến lược \textbf{Direct GRU} đã trình bày lý thuyết ở Mục~1.4. Lựa chọn này dựa trên cơ sở: bằng cách dự báo trọn horizon trong một lượt forward duy nhất, Direct GRU không dùng giá trị dự báo của chính nó làm đầu vào cho bước kế tiếp, nên tránh được hiện tượng \textbf{dồn sai số} — hạn chế cố hữu của chiến lược Recursive khi horizon tăng lên.
 
 Để việc chọn siêu tham số và early-stopping có một tín hiệu đánh giá đáng tin cậy nhưng vẫn tách biệt hoàn toàn khỏi dữ liệu huấn luyện, một cơ chế \textbf{sliding-fold cross-validation} được áp dụng riêng trên tập Validate (không dùng Train): tập Validate được quét bằng nhiều fold $(X, y)$ liên tiếp, mỗi fold gồm 28 ngày làm đầu vào và 7 ngày kế tiếp làm mục tiêu, dịch đi đúng 7 ngày (bằng horizon) sau mỗi fold để phần mục tiêu giữa các fold không chồng lấn — thu được \textbf{38 fold}. Validation loss (MAE, thang chuẩn hóa) dùng cho Grid Search và early-stopping được tính trung bình trên toàn bộ 38 fold này, thay vì dựa trên một khối dữ liệu cố định duy nhất — giúp tín hiệu đánh giá ổn định và đáng tin cậy hơn một khối 7 ngày đơn lẻ, đồng thời vẫn phản ánh đúng khả năng tổng quát hóa vì không chồng lấn với Train.
 
