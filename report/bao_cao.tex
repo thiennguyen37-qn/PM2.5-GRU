@@ -636,7 +636,16 @@ Trong tổng số 1.453 ngày có dữ liệu, có \textbf{510 ngày (35.1\%)} c
 \label{fig:aqiscale}
 \end{figure}
 
-Khác với WHO và QCVN — mỗi chuẩn chỉ đưa ra một ngưỡng nhị phân "đạt/không đạt" — thang Air Quality Index (AQI) ở Hình~\ref{fig:aqiscale} phân loại mức độ ô nhiễm PM2.5 thành \textbf{6 cấp độ} (Good, Moderate, Unhealthy for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous), mỗi cấp đi kèm khuyến cáo sức khỏe và khuyến nghị hành vi cụ thể, cho phép đánh giá mức độ nghiêm trọng chi tiết hơn nhiều so với việc chỉ so sánh với một ngưỡng duy nhất. Đối chiếu với dữ liệu quan sát được: phần lớn các ngày (trung vị 12.5, trung bình 13.73~$\mu$g/m$^3$ — Bảng~\ref{tab:describe}) chỉ tương ứng mức \textbf{Moderate}, tức chất lượng không khí chấp nhận được và hầu như không gây lo ngại, ngoại trừ nhóm rất nhạy cảm. Tuy nhiên, các đợt tăng đột biến quan sát được ở Hình~\ref{fig:whoqcvn} (đỉnh cao nhất của chuỗi trung bình ngày là 41.3~$\mu$g/m$^3$, ghi nhận ngày 2025-04-05) đã vượt xa khoảng Moderate và bước vào vùng \textbf{Unhealthy for Sensitive Groups} theo các thang phân loại AQI phổ biến (US EPA) mà AQICN sử dụng. Điều này cho thấy mặc dù QCVN Việt Nam (50~$\mu$g/m$^3$) chưa từng bị vượt trong suốt giai đoạn quan sát, kết luận đó chỉ phản ánh một ngưỡng khá rộng — các đợt ô nhiễm đỉnh điểm trong dữ liệu vẫn đủ nghiêm trọng để ảnh hưởng đến nhóm nhạy cảm nếu đối chiếu theo thang đánh giá quốc tế có phân cấp chi tiết hơn.
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/AQI_PM25_conversion.png}
+\caption{Ngưỡng nồng độ PM2.5 ($\mu$g/m$^3$) tương ứng với từng khoảng AQI (nguồn: AQICN)}
+\label{fig:aqiconversion}
+\end{figure}
+
+Khác với WHO và QCVN — mỗi chuẩn chỉ đưa ra một ngưỡng nhị phân "đạt/không đạt" — thang Air Quality Index (AQI) ở Hình~\ref{fig:aqiscale} phân loại mức độ ô nhiễm PM2.5 thành \textbf{6 cấp độ} (Good, Moderate, Unhealthy for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous), mỗi cấp đi kèm khuyến cáo sức khỏe và khuyến nghị hành vi cụ thể, cho phép đánh giá mức độ nghiêm trọng chi tiết hơn nhiều so với việc chỉ so sánh với một ngưỡng duy nhất. Hình~\ref{fig:aqiconversion} quy đổi cụ thể 6 cấp độ đó sang nồng độ PM2.5 ($\mu$g/m$^3$): Good ($0$--$12$), Moderate ($12$--$35.5$), Unhealthy for Sensitive Groups ($35.5$--$55.5$), Unhealthy ($55.5$--$150.5$), Very Unhealthy ($150.5$--$250.5$), Hazardous ($\geq 250.5$).
+
+Áp bảng quy đổi này lên toàn bộ 1.453 ngày dữ liệu cho thấy một bức tranh chi tiết hơn nhiều so với kết luận nhị phân "đạt/không đạt" QCVN: \textbf{644 ngày (44.3\%)} ở mức Good, \textbf{803 ngày (55.3\%)} ở mức Moderate, và \textbf{6 ngày (0.4\%)} rơi vào mức \textbf{Unhealthy for Sensitive Groups} — không có ngày nào chạm tới các mức Unhealthy trở lên. Nói cách khác, chất lượng không khí trong giai đoạn quan sát dao động gần như hoàn toàn giữa hai mức Good và Moderate, chiếm tổng cộng 99.6\% số ngày. Đỉnh cao nhất của chuỗi trung bình ngày, đạt 41.3~$\mu$g/m$^3$ vào ngày 2025-04-05 như Hình~\ref{fig:whoqcvn} đã cho thấy, rơi đúng vào khoảng Unhealthy for Sensitive Groups, tức từ 35.5 đến 55.5~$\mu$g/m$^3$. Điều này cho thấy mặc dù QCVN Việt Nam với ngưỡng 50~$\mu$g/m$^3$ chưa từng bị vượt trong suốt giai đoạn quan sát, kết luận đó chỉ phản ánh một ngưỡng khá rộng — vẫn tồn tại 6 ngày đủ nghiêm trọng để ảnh hưởng đến nhóm nhạy cảm theo thang đánh giá quốc tế có phân cấp chi tiết hơn.
 
 % ==================== 2.3 TIỀN XỬ LÝ ====================
 \section{Tiền xử lý dữ liệu}
