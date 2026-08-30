@@ -344,51 +344,152 @@ Hình~\ref{fig:recursive} minh họa cơ chế recursive qua ba bước đầu t
 
 Ưu điểm của chiến lược này là tận dụng trực tiếp mô hình dự báo một bước đã có sẵn mà không cần huấn luyện một mô hình riêng cho từng horizon. Tuy nhiên, hạn chế chính là hiện tượng \textbf{tích lũy sai số} (\textit{error compounding}): sai số ở các bước dự báo đầu sẽ tiếp tục lan sang các bước sau do các giá trị dự báo được sử dụng làm đầu vào cho chính mô hình. Vì vậy, horizon dự báo càng xa thì độ tin cậy của kết quả thường càng giảm. Bên cạnh đó, việc giả định persistence đối với các đặc trưng ngoại sinh cũng có thể làm phát sinh thêm sai lệch nếu các đặc trưng này biến động đáng kể trong giai đoạn dự báo.
 
-\subsection*{Direct GRU (Vector Output)}
+\subsection*{Direct Multi-output GRU}
 
-Chiến lược thứ hai giải quyết trực tiếp vấn đề dồn sai số của Recursive: thay vì tái sử dụng model horizon=1, \textbf{huấn luyện một model mới} dự đoán \textbf{toàn bộ $H$ bước tương lai cùng lúc} trong một lần forward pass duy nhất.
+Một hạn chế quan trọng của chiến lược Recursive là các giá trị dự đoán ở những bước trước được đưa trở lại làm đầu vào cho những bước sau. Do đó, sai số xuất hiện ở các horizon gần có thể tiếp tục lan truyền và ảnh hưởng đến các dự báo xa hơn. Chiến lược Direct Multi-output giải quyết vấn đề này bằng cách thay đổi cách xây dựng đầu ra của mô hình: thay vì dự báo từng bước một cách tuần tự, mô hình được huấn luyện để dự báo trực tiếp toàn bộ $H$ bước tương lai trong một lần forward pass.
 
-Kiến trúc Encoder GRU được giữ nguyên như đã trình bày ở trên (đọc cửa sổ $w$ giờ lịch sử, nén thành trạng thái ẩn cuối $h_w$), chỉ thay đổi duy nhất lớp fully-connected: thay vì $\text{Linear}(\text{hidden}, 1)$ chỉ ra một số, dùng $\text{Linear}(\text{hidden}, H)$ để ra thẳng $H$ giá trị cùng lúc:
+Với một cửa sổ lịch sử có độ dài $w$ kết thúc tại thời điểm $t$,
+
+\[
+X_{t-w+1:t}
+=
+[x_{t-w+1},x_{t-w+2},\ldots,x_t],
+\]
+
+Encoder GRU lần lượt xử lý các quan sát trong cửa sổ và tạo ra trạng thái ẩn cuối cùng $h_w$. Trạng thái này có thể được xem như một biểu diễn cô đọng của toàn bộ thông tin lịch sử mà mô hình quan sát được trước thời điểm dự báo.
+
+Khác với mô hình one-step GRU, trong đó lớp đầu ra chỉ sinh một giá trị,
+
+\[
+\hat y_{t+1}
+=
+W_{fc}h_w+b_{fc},
+\]
+
+Direct Multi-output GRU sử dụng một lớp fully-connected (Linear layer) có $H$ nút đầu ra. Lớp Linear thực hiện phép biến đổi
+
+\[
+z = W_{fc}h_w + b_{fc},
+\]
+
+trong đó $W_{fc}$ và $b_{fc}$ là các tham số được học trong quá trình huấn luyện. Nếu hidden state có số chiều là $d_h$, lớp đầu ra có dạng
+
+\[
+\text{Linear}(d_h,H).
+\]
+
+Do đó, từ cùng một trạng thái ẩn $h_w$, mô hình sinh trực tiếp một vector gồm toàn bộ $H$ giá trị cần dự báo:
+
 \begin{equation}
-[\hat{y}_{t+1}, \hat{y}_{t+2}, \dots, \hat{y}_{t+H}]^\top = W_{fc}\, h_w + b_{fc}, \qquad W_{fc} \in \mathbb{R}^{H \times \text{hidden}}
+\begin{bmatrix}
+\hat y_{t+1}\\
+\hat y_{t+2}\\
+\vdots\\
+\hat y_{t+H}
+\end{bmatrix}
+=
+W_{fc}h_w+b_{fc},
+\qquad
+W_{fc}\in\mathbb{R}^{H\times d_h},
+\qquad
+b_{fc}\in\mathbb{R}^{H}.
 \end{equation}
+
+Có thể xem mỗi hàng của ma trận $W_{fc}$ là một ánh xạ riêng ứng với một horizon dự báo:
+
+\[
+\hat y_{t+k}
+=
+w^{(k)}h_w+b_k,
+\qquad
+k=1,2,\ldots,H.
+\]
+
+Như vậy, mặc dù tất cả các horizon đều sử dụng chung biểu diễn lịch sử $h_w$, lớp Linear vẫn học một bộ trọng số đầu ra riêng cho từng bước dự báo.
+
+Trong quá trình huấn luyện, mỗi mẫu dữ liệu không còn có một target đơn lẻ mà có một vector target:
+
+\[
+Y_t
+=
+[y_{t+1},y_{t+2},\ldots,y_{t+H}].
+\]
+
+Nếu sử dụng Mean Squared Error, hàm mất mát có thể được tính đồng thời trên toàn bộ horizon:
+
+\begin{equation}
+\mathcal{L}
+=
+\frac{1}{H}
+\sum_{k=1}^{H}
+\left(
+y_{t+k}-\hat y_{t+k}
+\right)^2.
+\end{equation}
+
+Nhờ đó, các tham số của Encoder GRU và lớp đầu ra được tối ưu đồng thời để trạng thái $h_w$ chứa thông tin hữu ích cho cả các dự báo gần lẫn các dự báo xa.
 
 \begin{figure}[H]
 \centering
+
 \begin{tikzpicture}[>=Latex, x=1cm, y=1cm]
-  \foreach \i in {0,1,2,3} {
-    \node[realcell] (a\i) at (\i*0.9,0) {};
-  }
-  \node[font=\scriptsize] at (1.35,-0.6) {Cửa sổ input (toàn bộ dữ liệu thật)};
 
-  \node[grubox, minimum width=1.6cm, minimum height=1cm] (enc) at (5.2,0) {Encoder GRU};
-  \draw[cline] (a3.east) -- (enc.west);
+    \foreach \i in {0,1,2,3} {
+        \node[realcell] (a\i) at (\i*0.9,0) {};
+    }
 
-  \node[opnode, minimum size=0.5cm] (hw) at (7.3,0) {$h_w$};
-  \draw[cline] (enc.east) -- (hw.west);
+    \node[font=\scriptsize] at (1.35,-0.6)
+    {Cửa sổ lịch sử $X_{t-w+1:t}$};
 
-  \node[gatebox, fill=violet!15, minimum width=1.4cm] (fc) at (9.4,0) {Linear};
-  \draw[cline] (hw.east) -- (fc.west);
+    \node[grubox, minimum width=1.6cm, minimum height=1cm]
+    (enc) at (5.2,0) {Encoder GRU};
 
-  \node[predcell] (o1) at (11.6,1.65) {$\hat y_{w+1}$};
-  \node[predcell] (o2) at (11.6,0.55) {$\hat y_{w+2}$};
-  \node[font=\small] (odots) at (11.6,-0.55) {$\vdots$};
-  \node[predcell] (oH) at (11.6,-1.65) {$\hat y_{w+H}$};
-  \foreach \o in {o1,o2,oH} {
-    \draw[cline] (fc.east) -- (\o.west);
-  }
+    \draw[cline] (a3.east) -- (enc.west);
 
-  \node[font=\scriptsize] at (9.4,-2.6) {1 lần forward pass duy nhất};
+    \node[opnode, minimum size=0.5cm]
+    (hw) at (7.3,0) {$h_w$};
+
+    \draw[cline] (enc.east) -- (hw.west);
+
+    \node[gatebox, fill=violet!15, minimum width=1.7cm]
+    (fc) at (9.4,0) {Linear$(d_h,H)$};
+
+    \draw[cline] (hw.east) -- (fc.west);
+
+    \node[predcell] (o1) at (11.6,1.65) {$\hat y_{t+1}$};
+    \node[predcell] (o2) at (11.6,0.55) {$\hat y_{t+2}$};
+    \node[font=\small] (odots) at (11.6,-0.55) {$\vdots$};
+    \node[predcell] (oH) at (11.6,-1.65) {$\hat y_{t+H}$};
+
+    \foreach \o in {o1,o2,oH} {
+        \draw[cline] (fc.east) -- (\o.west);
+    }
+
+    \node[font=\scriptsize] at (9.4,-2.6)
+    {Một forward pass cho toàn bộ $H$ horizon};
+
 \end{tikzpicture}
-\caption{Direct GRU: một Encoder duy nhất, output rộng ra thẳng cả $H$ bước cùng lúc, không đệ quy}
+
+\caption{Direct Multi-output GRU: Encoder GRU mã hóa cửa sổ lịch sử thành trạng thái ẩn cuối $h_w$, sau đó lớp Linear sinh đồng thời toàn bộ $H$ giá trị dự báo.}
+
 \label{fig:direct}
 \end{figure}
 
-Hình~\ref{fig:direct} cho thấy điểm khác biệt cốt lõi so với Recursive: cửa sổ input \textbf{luôn là dữ liệu thật 100\%} — không có bước dự đoán nào bị đưa ngược lại làm input cho bước khác. Toàn bộ $H$ dự đoán đều được tính \textbf{độc lập với nhau}, xuất phát từ cùng một ngữ cảnh $h_w$ duy nhất.
+Hình~\ref{fig:direct} minh họa sự khác biệt cốt lõi giữa chiến lược Direct Multi-output và Recursive. Tại thời điểm dự báo $t$, mô hình sử dụng cửa sổ dữ liệu lịch sử quan sát được $X_{t-w+1:t}$ để tạo ra trạng thái ẩn $h_w$. Từ trạng thái này, toàn bộ các giá trị
+$\hat y_{t+1},\hat y_{t+2},\ldots,\hat y_{t+H}$
+được sinh đồng thời trong một forward pass.
 
-\textbf{Ưu điểm}: vì không có cơ chế đệ quy, Direct GRU \textbf{không bị dồn sai số} qua các bước horizon — sai số ở bước dự đoán xa không phụ thuộc vào sai số ở bước gần.
+Điểm quan trọng là không có dự đoán nào được đưa trở lại làm đầu vào để tạo ra dự đoán tiếp theo. Chẳng hạn, $\hat y_{t+2}$ không được tính từ $\hat y_{t+1}$, và $\hat y_{t+3}$ cũng không cần sử dụng $\hat y_{t+2}$. Vì vậy, khác với Recursive GRU, sai số tại một horizon không trực tiếp lan truyền sang các horizon phía sau thông qua đầu vào của mô hình.
 
-\textbf{Nhược điểm}: model phải học đồng thời $H$ mục tiêu khác nhau trong cùng một mạng (đa nhiệm), có thể đánh đổi đôi chút độ chính xác ở bước dự đoán gần nhất ($h=1$) so với một model được huấn luyện chuyên biệt chỉ cho horizon=1 duy nhất; đồng thời cần huấn luyện lại từ đầu, không tái sử dụng được model horizon=1 sẵn có như Recursive.
+Tuy nhiên, các đầu ra không hoàn toàn độc lập với nhau. Tất cả chúng đều được tạo từ cùng một biểu diễn lịch sử $h_w$ và cùng được tối ưu trong quá trình huấn luyện. Do đó, chính xác hơn nên nói rằng các horizon \textit{không phụ thuộc đệ quy vào nhau}, thay vì nói rằng chúng hoàn toàn độc lập.
+
+\textbf{Ưu điểm.}
+Ưu điểm chính của Direct Multi-output GRU là loại bỏ cơ chế lan truyền sai số đặc trưng của dự báo Recursive. Do không sử dụng các giá trị dự đoán trước đó làm đầu vào, một sai số lớn tại $\hat y_{t+1}$ không trực tiếp làm thay đổi đầu vào dùng để tính $\hat y_{t+2}$ hoặc các horizon xa hơn. Bên cạnh đó, toàn bộ $H$ bước được sinh trong một forward pass nên quá trình suy luận thường nhanh hơn so với việc gọi mô hình $H$ lần liên tiếp như trong Recursive forecasting.
+
+\textbf{Nhược điểm.}
+Đổi lại, mô hình phải học đồng thời ánh xạ từ cùng một biểu diễn lịch sử sang nhiều horizon khác nhau. Các dự báo gần và xa có độ khó và đặc điểm thống kê khác nhau, trong khi chúng vẫn chia sẻ cùng một Encoder GRU. Vì vậy, biểu diễn $h_w$ phải chứa thông tin hữu ích cho toàn bộ khoảng dự báo, thay vì chỉ tối ưu riêng cho bước $t+1$. Trong một số trường hợp, điều này có thể làm giảm nhẹ hiệu quả tại horizon rất gần so với một mô hình được huấn luyện chuyên biệt cho one-step forecasting.
+
+Ngoài ra, kiến trúc đầu ra phụ thuộc trực tiếp vào giá trị $H$. Chẳng hạn, một mô hình được huấn luyện với $H=6$ sẽ có lớp đầu ra $\text{Linear}(d_h,6)$ và sinh trực tiếp sáu giá trị tương ứng với các thời điểm từ $t+1$ đến $t+6$. Nếu muốn thay đổi horizon dự báo sang $H=12$, cần thay đổi kích thước lớp đầu ra thành $\text{Linear}(d_h,12)$ và thông thường phải huấn luyện lại mô hình.
 
 % ==================== CHƯƠNG 2: ỨNG DỤNG ====================
 \chapter{Ứng dụng dự báo nồng độ PM2.5}
@@ -537,7 +638,16 @@ Hình~\ref{fig:violin} cho thấy giá trị trung vị/trung bình PM2.5 tươn
 \label{fig:whoqcvn}
 \end{figure}
 
-Trong tổng số 1.453 ngày có dữ liệu, có \textbf{510 ngày (35.1\%)} có nồng độ PM2.5 trung bình 24h vượt ngưỡng khuyến nghị của WHO Air Quality Guideline 2021 (15~$\mu$g/m$^3$) — cho thấy hơn một phần ba số ngày trong giai đoạn quan sát không đạt chuẩn an toàn theo khuyến nghị quốc tế. Ngược lại, \textbf{không có ngày nào (0.0\%)} vượt ngưỡng QCVN 05:2013/BTNMT của Việt Nam (50~$\mu$g/m$^3$) (Hình~\ref{fig:whoqcvn}) — phản ánh khoảng cách đáng kể giữa quy chuẩn hiện hành trong nước và chuẩn khuyến nghị siết chặt hơn của WHO.
+Trong tổng số 1.453 ngày có dữ liệu, có \textbf{510 ngày (35.1\%)} có nồng độ PM2.5 trung bình 24h vượt ngưỡng khuyến nghị của WHO Air Quality Guideline 2021 (15~$\mu$g/m$^3$) — cho thấy hơn một phần ba số ngày trong giai đoạn quan sát không đạt chuẩn an toàn theo khuyến nghị quốc tế. Ngược lại, \textbf{không có ngày nào (0.0\%)} vượt ngưỡng \textbf{QCVN 05:2013/BTNMT} — \textbf{Quy chuẩn kỹ thuật quốc gia về chất lượng không khí xung quanh}, do \textbf{Bộ Tài nguyên và Môi trường (BTNMT)} ban hành năm 2013 — của Việt Nam (50~$\mu$g/m$^3$) (Hình~\ref{fig:whoqcvn}) — phản ánh khoảng cách đáng kể giữa quy chuẩn hiện hành trong nước và chuẩn khuyến nghị siết chặt hơn của WHO.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/AQI_PM25.png}
+\caption{Thang phân loại chỉ số chất lượng không khí (AQI) áp dụng riêng cho PM2.5 (nguồn: AQICN, \url{https://aqicn.org/scale/})}
+\label{fig:aqiscale}
+\end{figure}
+
+Khác với WHO và QCVN — mỗi chuẩn chỉ đưa ra một ngưỡng nhị phân "đạt/không đạt" — thang Air Quality Index (AQI) ở Hình~\ref{fig:aqiscale} phân loại mức độ ô nhiễm PM2.5 thành \textbf{6 cấp độ} (Good, Moderate, Unhealthy for Sensitive Groups, Unhealthy, Very Unhealthy, Hazardous), mỗi cấp đi kèm khuyến cáo sức khỏe và khuyến nghị hành vi cụ thể, cho phép đánh giá mức độ nghiêm trọng chi tiết hơn nhiều so với việc chỉ so sánh với một ngưỡng duy nhất. Đối chiếu với dữ liệu quan sát được: phần lớn các ngày (trung vị 12.5, trung bình 13.73~$\mu$g/m$^3$ — Bảng~\ref{tab:describe}) chỉ tương ứng mức \textbf{Moderate}, tức chất lượng không khí chấp nhận được và hầu như không gây lo ngại, ngoại trừ nhóm rất nhạy cảm. Tuy nhiên, các đợt tăng đột biến quan sát được ở Hình~\ref{fig:whoqcvn} (đỉnh cao nhất của chuỗi trung bình ngày là 41.3~$\mu$g/m$^3$, ghi nhận ngày 2025-04-05) đã vượt xa khoảng Moderate và bước vào vùng \textbf{Unhealthy for Sensitive Groups} theo các thang phân loại AQI phổ biến (US EPA) mà AQICN sử dụng. Điều này cho thấy mặc dù QCVN Việt Nam (50~$\mu$g/m$^3$) chưa từng bị vượt trong suốt giai đoạn quan sát, kết luận đó chỉ phản ánh một ngưỡng khá rộng — các đợt ô nhiễm đỉnh điểm trong dữ liệu vẫn đủ nghiêm trọng để ảnh hưởng đến nhóm nhạy cảm nếu đối chiếu theo thang đánh giá quốc tế có phân cấp chi tiết hơn.
 
 % ==================== 2.3 TIỀN XỬ LÝ ====================
 \section{Tiền xử lý dữ liệu}
