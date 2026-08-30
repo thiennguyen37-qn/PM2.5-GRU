@@ -511,6 +511,8 @@ Các biến trong bộ dữ liệu sau khi chuẩn hóa tên cột:
     \item \textbf{day, month, year, hour}: Các thành phần thời gian tách từ cột \texttt{time}
 \end{itemize}
 
+\section{Phân tích khám phá dữ liệu (EDA)}
+
 \begin{table}[H]
 \centering
 \caption{Thống kê mô tả các biến định lượng}
@@ -535,8 +537,6 @@ UV Index Clear Sky & --- & 2.53 & 3.84 & 0.00 & 0.00 & 14.10 \\
 
 Ba biến cuối (\textit{Dust}, \textit{UV Index}, \textit{UV Index Clear Sky}) có trung vị bằng 0, cho thấy phân phối lệch phải rất mạnh với phần lớn giá trị bằng 0 — dấu hiệu cho thấy các biến này có thể ít mang thông tin hữu ích cho việc dự báo PM2.5, sẽ được kiểm chứng qua phân tích tương quan ở phần tiếp theo.
 
-\section{Phân tích khám phá dữ liệu (EDA)}
-
 \subsection*{Tương quan giữa các chỉ số chất lượng không khí}
 
 \begin{figure}[H]
@@ -553,7 +553,7 @@ Hình~\ref{fig:corr} cho thấy PM10 và PM2.5 có tương quan rất cao ($r = 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/pm25_lineplot.png}
-\caption{Chuỗi thời gian nồng độ PM2.5 (2022--2026)}
+\caption{Chuỗi thời gian nồng độ PM2.5 (04/08/2022 -- 26/07/2026)}
 \label{fig:lineplot}
 \end{figure}
 
@@ -564,20 +564,9 @@ Hình~\ref{fig:corr} cho thấy PM10 và PM2.5 có tương quan rất cao ($r = 
 \label{fig:hist}
 \end{figure}
 
-Chuỗi PM2.5 (Hình~\ref{fig:lineplot}) dao động chủ yếu trong khoảng 5--30~$\mu$g/m$^3$, với các đợt tăng đột biến ngắn hạn (lên đến $\sim$70~$\mu$g/m$^3$) và biểu hiện lặp lại theo mùa khá rõ. Phân phối PM2.5 (Hình~\ref{fig:hist}) lệch phải, với giá trị trung vị (12.5) thấp hơn giá trị trung bình (13.73) — phù hợp với đặc điểm dữ liệu môi trường, nơi các sự kiện ô nhiễm cao là thiểu số nhưng có biên độ lớn.
+Chuỗi PM2.5 (Hình~\ref{fig:lineplot}) dao động chủ yếu trong khoảng 5--30~$\mu$g/m$^3$, với các đợt tăng đột biến ngắn hạn (lên đến $\sim$70~$\mu$g/m$^3$). Tính chu kỳ theo mùa thể hiện qua việc mật độ và biên độ các đợt tăng đột biến không trải đều theo thời gian mà tập trung thành từng "dải" rõ rệt, lặp lại đều đặn mỗi năm một lần vào khoảng tháng 1--5 (dễ thấy nhất ở các giai đoạn đầu 2023, đầu 2025 và đầu 2026 trên Hình~\ref{fig:lineplot}), xen kẽ những giai đoạn nền thấp và ổn định hơn vào khoảng tháng 6--12. Phân phối PM2.5 (Hình~\ref{fig:hist}) lệch phải rõ rệt: đỉnh mật độ (mode) nằm ở khoảng 9--10~$\mu$g/m$^3$, thấp hơn cả trung vị (12.5) lẫn trung bình (13.73) — đúng thứ tự mode $<$ median $<$ mean đặc trưng của phân phối lệch phải. Từ mốc 0, mật độ tăng rất dốc lên đỉnh trong khoảng 0--10~$\mu$g/m$^3$, sau đó giảm chậm dần thành một đuôi phải kéo dài đến gần 100~$\mu$g/m$^3$ nhưng mật độ rất thấp (gần như phẳng sau mốc 40~$\mu$g/m$^3$) — phù hợp với đặc điểm dữ liệu môi trường, nơi phần lớn quan sát tập trung quanh nền ô nhiễm thông thường, còn các sự kiện ô nhiễm cao là thiểu số nhưng có biên độ lớn, kéo dài đuôi phân phối về phía bên phải.
 
-\subsection*{Xu hướng theo Moving Average}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{figures/pm25_moving_average.png}
-\caption{PM2.5 và đường trung bình trượt (Moving Average) 7, 30 và 90 ngày}
-\label{fig:ma}
-\end{figure}
-
-Hình~\ref{fig:ma} cho thấy các đường trung bình trượt 30 ngày và 90 ngày dao động lặp lại theo chu kỳ hàng năm — tăng vào giai đoạn đầu năm (khoảng tháng 1--4) và giảm dần về giữa năm — chứ không trôi dạt theo một hướng cố định qua các năm 2022--2026. Chuỗi giá trị thực tế (đường xám) dao động rất mạnh quanh các đường trung bình trượt, phản ánh nhiều đợt tăng đột biến ngắn hạn xen kẽ nền chu kỳ mùa; đặc điểm "không trôi dạt, chỉ dao động quanh một nền tương đối ổn định" này sẽ được thấy lại rõ hơn ở thành phần Trend khi phân rã chuỗi thời gian ngay sau đây.
-
-\subsection*{Tính chu kỳ (Seasonality)}
+\subsection*{Tính chu kỳ trong ngày (ACF/PACF)}
 
 \begin{figure}[H]
 \centering
@@ -587,6 +576,17 @@ Hình~\ref{fig:ma} cho thấy các đường trung bình trượt 30 ngày và 9
 \end{figure}
 
 Biểu đồ ACF (Hình~\ref{fig:acfpacf}) thể hiện các đỉnh lặp lại rõ rệt tại lag 24, 48, 72, 96... giờ — xác nhận \textbf{chu kỳ ngày (24 giờ)} là chu kỳ chi phối hành vi ngắn hạn của PM2.5, phù hợp với quy luật sinh hoạt/giao thông đô thị (giờ cao điểm) lặp lại mỗi ngày. Đây là một trong những căn cứ cho quyết định gộp dữ liệu về mức trung bình ngày trước khi đưa vào mô hình (Mục~2.3), vì chu kỳ trong ngày không còn là yếu tố cần mô hình hóa trực tiếp ở granularity ngày.
+
+\subsection*{Xu hướng dài hạn và biến động theo mùa}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/pm25_moving_average.png}
+\caption{PM2.5 và đường trung bình trượt (Moving Average) 7, 30 và 90 ngày}
+\label{fig:ma}
+\end{figure}
+
+Hình~\ref{fig:ma} cho thấy các đường trung bình trượt 30 ngày và 90 ngày dao động lặp lại theo chu kỳ hàng năm — tăng vào giai đoạn đầu năm (khoảng tháng 1--4) và giảm dần về giữa năm — chứ không trôi dạt theo một hướng cố định qua các năm 2022--2026. Chuỗi giá trị thực tế (đường xám) dao động rất mạnh quanh các đường trung bình trượt, phản ánh nhiều đợt tăng đột biến ngắn hạn xen kẽ nền chu kỳ mùa; đặc điểm "không trôi dạt, chỉ dao động quanh một nền tương đối ổn định" này sẽ được thấy lại rõ hơn ở thành phần Trend khi phân rã chuỗi thời gian ngay sau đây.
 
 \begin{figure}[H]
 \centering
@@ -604,8 +604,6 @@ Thành phần Trend là một đường cong trơn, biến thiên rất chậm v
 Ngược lại, thành phần Seasonal dao động trong khoảng $-8$ đến $+13$ và lặp lại đều đặn theo từng năm: đạt đỉnh dương (khoảng $+10$ đến $+13$) vào giai đoạn tháng 1--4, rồi xuống đáy âm (khoảng $-5$ đến $-8$) vào giai đoạn giữa năm (tháng 6--9) — hoàn toàn nhất quán với quy luật "tăng đầu năm, giảm giữa năm" đã quan sát được ở Hình~\ref{fig:ma} và sẽ còn thấy lại ở Seasonal Subseries Plot (Hình~\ref{fig:seasonal}) ngay sau đây. Đáng chú ý, biên độ dao động của thành phần Seasonal (xấp xỉ $\pm 13$) lớn hơn nhiều so với biên độ của Trend (chưa đến 3 đơn vị) — khẳng định tính chu kỳ theo năm mới là yếu tố chi phối chính hành vi dài hạn của PM2.5, chứ không phải một xu hướng trôi dạt.
 
 Cuối cùng, thành phần Residual dao động khá đều quanh mốc 0, phần lớn nằm trong khoảng $\pm 10$, nhưng thỉnh thoảng xuất hiện những đỉnh nhọn vượt 15--20~$\mu$g/m$^3$ (rõ nhất ở cuối tháng 2/2023 và đầu tháng 4/2025) trùng với các đợt tăng đột biến đã thấy ở panel Observed. Đây là phần biến động không được giải thích bởi Trend hay Seasonal, phản ánh các sự kiện ô nhiễm mang tính tức thời (điều kiện thời tiết bất lợi, hoạt động đốt theo mùa vụ...) — đúng là loại dao động ngắn hạn, khó đoán trước bằng thống kê cổ điển mà thành phần GRU trong kiến trúc hybrid ở Mục~2.3 được thiết kế để đảm nhiệm.
-
-\subsection*{Biến động PM2.5 theo mùa trong năm}
 
 \begin{figure}[H]
 \centering
