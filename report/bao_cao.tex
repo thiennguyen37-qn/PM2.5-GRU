@@ -575,7 +575,11 @@ Chuỗi PM2.5 (Hình~\ref{fig:lineplot}) dao động chủ yếu trong khoảng 
 \label{fig:acfpacf}
 \end{figure}
 
-Biểu đồ ACF (Hình~\ref{fig:acfpacf}) thể hiện các đỉnh lặp lại rõ rệt tại lag 24, 48, 72, 96... giờ — xác nhận \textbf{chu kỳ ngày (24 giờ)} là chu kỳ chi phối hành vi ngắn hạn của PM2.5, phù hợp với quy luật sinh hoạt/giao thông đô thị (giờ cao điểm) lặp lại mỗi ngày. Đây là một trong những căn cứ cho quyết định gộp dữ liệu về mức trung bình ngày trước khi đưa vào mô hình (Mục~2.3), vì chu kỳ trong ngày không còn là yếu tố cần mô hình hóa trực tiếp ở granularity ngày.
+Biểu đồ ACF (Hình~\ref{fig:acfpacf}, panel trên) giảm dần theo dạng dao động tắt dần: từ đỉnh tại lag 0 ($=1$), giảm xuống đáy cục bộ quanh lag 12 ($\approx 0.5$), rồi tăng trở lại thành đỉnh cục bộ tại lag 24 ($\approx 0.67$) — và lặp lại đúng kiểu dao động này tại các lag 48, 72, 96, 120, 144, 168, tức các bội số của 24 giờ. Toàn bộ đường bao ACF suy giảm chậm từ 1.0 xuống còn khoảng 0.2--0.3 sau 168 giờ (1 tuần) nhưng không rơi xuống dưới 0, cho thấy PM2.5 có tính tự tương quan mạnh xuyên suốt cả tuần, với chu kỳ ngày (24 giờ) chồng lên trên xu hướng suy giảm chung đó.
+
+Biểu đồ PACF (Hình~\ref{fig:acfpacf}, panel dưới) bổ sung thêm bằng chứng: sau khi loại bỏ ảnh hưởng gián tiếp qua các lag trung gian, chỉ hai lag đầu tiên có hệ số tương quan riêng phần đáng kể — lag 1 ($\approx 0.97$) và lag 2 ($\approx -0.38$) — phản ánh PM2.5 tại một giờ phụ thuộc mạnh vào giá trị ngay trước đó, kèm một hiệu ứng điều chỉnh ngược ở giờ liền kề tiếp theo. Ngoài hai lag này, PACF gần như bằng 0 ở hầu hết các lag, \textbf{ngoại trừ} đúng những lag là bội số của 24 giờ (24, 48, 72,..., 144), nơi xuất hiện các hệ số âm nhỏ nhưng rõ rệt (từ $\approx -0.25$ tại lag 24, giảm dần về $\approx -0.05$ ở các lag xa hơn). Vì PACF đã loại bỏ tương quan gián tiếp qua các lag trung gian, các đỉnh âm này xác nhận chu kỳ ngày là một thành phần chu kỳ thật sự trong dữ liệu, chứ không chỉ là hệ quả của việc ACF suy giảm chậm.
+
+Cả hai biểu đồ đều thống nhất xác nhận \textbf{chu kỳ ngày (24 giờ)} là chu kỳ chi phối hành vi ngắn hạn của PM2.5, phù hợp với quy luật sinh hoạt/giao thông đô thị (giờ cao điểm) lặp lại mỗi ngày. Đây là một trong những căn cứ cho quyết định gộp dữ liệu về mức trung bình ngày trước khi đưa vào mô hình (Mục~2.3), vì chu kỳ trong ngày không còn là yếu tố cần mô hình hóa trực tiếp ở granularity ngày.
 
 \subsection*{Xu hướng dài hạn và biến động theo mùa}
 
