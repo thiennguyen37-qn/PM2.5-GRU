@@ -84,7 +84,7 @@ Gia Lai, 2026
 
 Ô nhiễm không khí đang trở thành một trong những vấn đề môi trường đáng quan tâm tại các khu vực đô thị, trong đó bụi mịn PM2.5 là một trong những tác nhân gây ảnh hưởng nghiêm trọng đến sức khỏe con người. PM2.5 là các hạt vật chất có đường kính khí động học không vượt quá $2.5,\mu m$. Với kích thước rất nhỏ, các hạt này có khả năng xâm nhập sâu vào hệ hô hấp, thậm chí đi vào hệ tuần hoàn, từ đó làm gia tăng nguy cơ mắc các bệnh liên quan đến đường hô hấp và tim mạch. Vì vậy, việc dự báo sớm nồng độ PM2.5, đặc biệt trong khoảng thời gian ngắn, có ý nghĩa quan trọng đối với công tác cảnh báo chất lượng không khí, hỗ trợ cộng đồng chủ động bảo vệ sức khỏe và góp phần nâng cao hiệu quả quản lý môi trường đô thị.
 
-Trong tiểu luận này, bài toán được xây dựng dưới dạng \textbf{dự báo chuỗi thời gian (time series forecasting)}, với mục tiêu dự báo nồng độ PM2.5 tại thời điểm kế tiếp, cụ thể là \textbf{1 giờ sau}, dựa trên lịch sử quan trắc trong một khoảng thời gian trước đó. Dữ liệu đầu vào được tổ chức dưới dạng chuỗi thời gian đa biến, bao gồm nồng độ PM2.5, các chỉ số chất lượng không khí có liên quan và các đặc trưng về thời gian. Mô hình học sâu được lựa chọn là \textbf{GRU (Gated Recurrent Unit)}, một biến thể của mạng nơ-ron hồi quy (Recurrent Neural Network -- RNN) được thiết kế nhằm học các mối quan hệ phụ thuộc theo thời gian và khắc phục một số hạn chế của RNN truyền thống khi xử lý các chuỗi có phụ thuộc dài hạn.
+Trong tiểu luận này, bài toán được xây dựng dưới dạng \textbf{dự báo chuỗi thời gian (time series forecasting)}, với mục tiêu dự báo nồng độ PM2.5 trong một khoảng thời gian tới, dựa trên lịch sử quan trắc trong một khoảng thời gian trước đó. Dữ liệu đầu vào được tổ chức dưới dạng chuỗi thời gian đa biến, bao gồm nồng độ PM2.5, các chỉ số chất lượng không khí có liên quan và các đặc trưng về thời gian. Mô hình học sâu được lựa chọn là \textbf{GRU (Gated Recurrent Unit)}, một biến thể của mạng nơ-ron hồi quy (Recurrent Neural Network -- RNN) được thiết kế nhằm học các mối quan hệ phụ thuộc theo thời gian và khắc phục một số hạn chế của RNN truyền thống khi xử lý các chuỗi có phụ thuộc dài hạn.
 
 Bộ dữ liệu sử dụng trong tiểu luận được thu thập từ \textbf{Open-Meteo Air Quality API} tại tọa độ $13.800003^\circ$N, $109.20001^\circ$E, tương ứng với khu vực thành phố Quy Nhơn, ở độ cao khoảng \textbf{9 m so với mực nước biển}. Dữ liệu được ghi nhận theo tần suất hàng giờ, liên tục từ \texttt{2022-08-04 07:00} đến \texttt{2026-07-26 23:00}, với tổng cộng \textbf{34.865 quan sát}. Khoảng thời gian quan trắc kéo dài gần bốn năm cung cấp cơ sở dữ liệu đủ lớn để khảo sát các đặc trưng theo thời gian của PM2.5 cũng như huấn luyện và đánh giá mô hình dự báo.
 
@@ -113,26 +113,33 @@ X_t = (x_{t-w+1}, x_{t-w+2}, \dots, x_t) \quad \longrightarrow \quad y_t
 
 trong đó $x_i \in \mathbb{R}^n$ là vector $n$ đặc trưng tại thời điểm $i$, còn $y_t$ là giá trị của biến mục tiêu (biến cần dự báo) tại bước thời gian $t+h$ trong tương lai.
 
-Phần còn lại của mục này trình bày cơ sở lý thuyết của các kiến trúc mạng nơ-ron hồi quy theo trình tự \textbf{RNN $\to$ LSTM $\to$ GRU}: xuất phát từ RNN nguyên bản và hạn chế của nó, đến LSTM như một giải pháp đầy đủ, và cuối cùng là GRU — kiến trúc trọng tâm được sử dụng trong tiểu luận — như một phiên bản đơn giản hóa của LSTM.
+Phần tiếp theo trình bày cơ sở lý thuyết của các kiến trúc mạng nơ-ron hồi quy theo trình tự \textbf{RNN $\rightarrow$ LSTM $\rightarrow$ GRU}. Trước hết, RNN truyền thống được giới thiệu cùng với cơ chế xử lý dữ liệu tuần tự và những hạn chế trong việc học các phụ thuộc dài hạn. Tiếp đó, LSTM được trình bày như một kiến trúc cải tiến nhằm khắc phục các hạn chế này thông qua cơ chế bộ nhớ và các cổng điều khiển. Cuối cùng, GRU --- kiến trúc được sử dụng trong tiểu luận --- được giới thiệu như một biến thể đơn giản hơn của LSTM, với số lượng cổng và tham số ít hơn nhưng vẫn có khả năng mô hình hóa các mối quan hệ phụ thuộc theo thời gian.
 
 \section{Recurrent Neural Network (RNN)}
 
-Recurrent Neural Network (RNN) là kiến trúc mạng nơ-ron được thiết kế riêng cho dữ liệu tuần tự. Khác với mạng nơ-ron truyền thẳng (feedforward), RNN có một \textbf{kết nối hồi quy}: trạng thái ẩn (hidden state) $h_t$ tại thời điểm $t$ được tính từ đầu vào hiện tại $x_t$ \textit{và} trạng thái ẩn của bước trước đó $h_{t-1}$:
+Recurrent Neural Network (RNN) là một kiến trúc mạng nơ-ron được xây dựng để xử lý dữ liệu có tính tuần tự, chẳng hạn như chuỗi thời gian, văn bản hoặc tín hiệu. Khác với mạng nơ-ron truyền thẳng (\textit{feedforward neural network}), trong đó mỗi đầu vào được xử lý độc lập, RNN duy trì một \textbf{trạng thái ẩn} (\textit{hidden state}) để truyền thông tin từ các bước thời gian trước sang bước hiện tại. Nhờ đó, kết quả xử lý tại một thời điểm không chỉ phụ thuộc vào quan sát hiện tại mà còn chịu ảnh hưởng bởi thông tin đã xuất hiện trước đó trong chuỗi.
+
+Tại thời điểm $t$, RNN nhận đầu vào $x_t$ cùng với trạng thái ẩn của bước trước $h_{t-1}$ để tính trạng thái ẩn mới $h_t$ theo công thức:
+
 \begin{equation}
-h_t = \tanh(W_h x_t + U_h h_{t-1} + b_h)
+h_t = \tanh(W_h x_t + U_h h_{t-1} + b_h),
 \end{equation}
 
-Nhờ cơ chế này, $h_t$ về lý thuyết mang thông tin tổng hợp từ toàn bộ lịch sử $x_1, x_2, \dots, x_t$, cho phép RNN xử lý chuỗi có độ dài bất kỳ với cùng một bộ tham số $(W_h, U_h, b_h)$ dùng chung cho mọi bước thời gian.
+trong đó $x_t \in \mathbb{R}^{n}$ là vector đặc trưng tại thời điểm $t$; $h_{t-1}$ và $h_t$ lần lượt là trạng thái ẩn tại thời điểm $t-1$ và $t$; $W_h$ là ma trận trọng số liên kết đầu vào với trạng thái ẩn; $U_h$ là ma trận trọng số của kết nối hồi quy giữa hai trạng thái ẩn liên tiếp; $b_h$ là vector bias; và $\tanh(\cdot)$ là hàm kích hoạt phi tuyến. Trạng thái ban đầu $h_0$ thường được khởi tạo bằng vector không hoặc được xác định theo cấu hình của mô hình.
+
+Thông qua quan hệ hồi quy trên, trạng thái $h_t$ phụ thuộc không chỉ vào $x_t$ mà còn gián tiếp phụ thuộc vào các quan sát trước đó thông qua $h_{t-1}$. Chẳng hạn, $h_{t-1}$ lại được tính từ $x_{t-1}$ và $h_{t-2}$, và quá trình này tiếp tục ngược về các bước thời gian trước. Vì vậy, về mặt lý thuyết, trạng thái $h_t$ có khả năng tổng hợp thông tin từ chuỗi các quan sát $x_1,x_2,\dots,x_t$ và đóng vai trò như một dạng bộ nhớ của mạng tại thời điểm $t$.
+
+Một đặc điểm quan trọng của RNN là cùng một bộ tham số $(W_h,U_h,b_h)$ được sử dụng tại tất cả các bước thời gian. Việc chia sẻ tham số này cho phép mạng xử lý các chuỗi có độ dài khác nhau mà không cần xây dựng một tập tham số riêng cho từng vị trí trong chuỗi. Khi biểu diễn dưới dạng khai triển theo thời gian (\textit{unrolled}), một RNN có thể được xem như một chuỗi các tế bào mạng có cùng cấu trúc và cùng trọng số, trong đó trạng thái ẩn được truyền tuần tự từ bước này sang bước kế tiếp.
 
 \begin{figure}[H]
 \centering
 \begin{subfigure}[b]{0.22\textwidth}
 \centering
 \begin{tikzpicture}[baseline]
-  \node[draw, rounded corners, minimum width=1.3cm, minimum height=1cm, fill=blue!10] (A) {$A$};
-  \draw[cline] (A.east) to [out=0,in=-90,looseness=1.6] ++(0.55,0.55) to [out=90,in=0,looseness=1.6] (A.north);
-  \draw[cline] (A.south) -- ++(0,-0.9) node[below]{$x_t$};
-  \draw[cline] (A.north) -- ++(0,0.9) node[above]{$h_t$};
+\node[draw, rounded corners, minimum width=1.3cm, minimum height=1cm, fill=blue!10] (A) {$A$};
+\draw[cline] ($(A.east)+(0,-0.2)$) -- ++(0.5,0) -- ++(0,0.4) -- ($(A.east)+(0,0.2)$);
+\draw[cline] ($(A.south)+(0,-0.9)$) node[below]{$x_t$} -- (A.south);
+\draw[cline] (A.north) -- ++(0,0.9) node[above]{$h_t$};
 \end{tikzpicture}
 \caption{Dạng cuộn}
 \end{subfigure}
@@ -140,65 +147,83 @@ Nhờ cơ chế này, $h_t$ về lý thuyết mang thông tin tổng hợp từ 
 \begin{subfigure}[b]{0.74\textwidth}
 \centering
 \begin{tikzpicture}[baseline]
-  \node[draw, rounded corners, minimum width=1.2cm, minimum height=1cm, fill=blue!10] (A0) at (0,0) {$A$};
-  \node[draw, rounded corners, minimum width=1.2cm, minimum height=1cm, fill=blue!10] (A1) at (2.4,0) {$A$};
-  \node[draw, rounded corners, minimum width=1.2cm, minimum height=1cm, fill=blue!10] (A2) at (4.8,0) {$A$};
-  \draw[cline] (A0.south) -- ++(0,-0.9) node[below]{$x_{t-1}$};
-  \draw[cline] (A1.south) -- ++(0,-0.9) node[below]{$x_{t}$};
-  \draw[cline] (A2.south) -- ++(0,-0.9) node[below]{$x_{t+1}$};
-  \draw[cline] (A0.north) -- ++(0,0.9) node[above]{$h_{t-1}$};
-  \draw[cline] (A1.north) -- ++(0,0.9) node[above]{$h_{t}$};
-  \draw[cline] (A2.north) -- ++(0,0.9) node[above]{$h_{t+1}$};
-  \draw[cline] (-1.1,0) -- (A0.west);
-  \draw[cline] (A0.east) -- (A1.west);
-  \draw[cline] (A1.east) -- (A2.west);
-  \draw[cline] (A2.east) -- ++(1.1,0);
+\node[draw, rounded corners, minimum width=1.2cm, minimum height=1cm, fill=blue!10] (A0) at (0,0) {$A$};
+\node[draw, rounded corners, minimum width=1.2cm, minimum height=1cm, fill=blue!10] (A1) at (2.4,0) {$A$};
+\node[draw, rounded corners, minimum width=1.2cm, minimum height=1cm, fill=blue!10] (A2) at (4.8,0) {$A$};
+\draw[cline] ($(A0.south)+(0,-0.9)$) node[below]{$x_{t-1}$} -- (A0.south);
+\draw[cline] ($(A1.south)+(0,-0.9)$) node[below]{$x_t$} -- (A1.south);
+\draw[cline] ($(A2.south)+(0,-0.9)$) node[below]{$x_{t+1}$} -- (A2.south);
+\draw[cline] (A0.north) -- ++(0,0.9) node[above]{$h_{t-1}$};
+\draw[cline] (A1.north) -- ++(0,0.9) node[above]{$h_t$};
+\draw[cline] (A2.north) -- ++(0,0.9) node[above]{$h_{t+1}$};
+\draw[cline] (-1.1,0) -- (A0.west);
+\draw[cline] (A0.east) -- (A1.west);
+\draw[cline] (A1.east) -- (A2.west);
+\draw[cline] (A2.east) -- ++(1.1,0);
 \end{tikzpicture}
-\caption{Dạng khai triển theo thời gian (unrolled)}
+\caption{Dạng khai triển theo thời gian (\textit{unrolled})}
 \end{subfigure}
-\caption{Kiến trúc Recurrent Neural Network (RNN)}
+\caption{Kiến trúc mạng nơ-ron hồi quy (RNN)}
 \label{fig:rnn}
 \end{figure}
 
-Hình~\ref{fig:rnn} minh họa một cell RNN $A$ ở hai cách biểu diễn: dạng cuộn (compact, với vòng lặp hồi quy) và dạng khai triển theo thời gian — trong đó cùng một cell $A$ (cùng bộ trọng số) được lặp lại tại mỗi bước, nhận đầu vào $x_t$ và trạng thái ẩn từ bước trước để tạo ra $h_t$.
+Hình~\ref{fig:rnn} minh họa hai cách biểu diễn tương đương của một RNN. Ở dạng cuộn, kết nối hồi quy thể hiện việc trạng thái của tế bào mạng được truyền trở lại để sử dụng tại bước thời gian tiếp theo. Khi khai triển theo thời gian, cùng một tế bào $A$ được biểu diễn tại nhiều thời điểm liên tiếp. Tại mỗi bước, tế bào nhận đầu vào $x_t$ và trạng thái ẩn $h_{t-1}$ từ bước trước để tạo ra trạng thái mới $h_t$, sau đó $h_t$ tiếp tục được truyền sang bước kế tiếp. Các tế bào trong hình không phải là những mạng độc lập mà cùng chia sẻ một bộ tham số.
 
-\textbf{Vấn đề vanishing/exploding gradient.} Khi huấn luyện bằng lan truyền ngược qua thời gian (Backpropagation Through Time), đạo hàm của hàm mất mát theo các tham số ở những bước thời gian xa cần được tính thông qua tích của nhiều ma trận Jacobian — mỗi ma trận tương ứng với một bước thời gian:
+Mặc dù cơ chế hồi quy cho phép RNN về lý thuyết khai thác thông tin từ các quan sát trong quá khứ, RNN truyền thống gặp khó khăn khi cần học các mối quan hệ phụ thuộc cách xa nhau trong chuỗi. Nguyên nhân chủ yếu xuất hiện trong quá trình huấn luyện bằng \textbf{lan truyền ngược qua thời gian} (\textit{Backpropagation Through Time -- BPTT}). Theo quy tắc dây chuyền, ảnh hưởng của một trạng thái ở thời điểm $t-k$ đến trạng thái tại thời điểm $t$ được xác định thông qua tích của nhiều đạo hàm liên tiếp:
+
 \begin{equation}
-\frac{\partial h_t}{\partial h_{t-k}} = \prod_{j=t-k+1}^{t} \frac{\partial h_j}{\partial h_{j-1}}
+\frac{\partial h_t}{\partial h_{t-k}} = \prod_{j=t-k+1}^{t} \frac{\partial h_j}{\partial h_{j-1}}.
 \end{equation}
-Nếu các giá trị riêng (eigenvalue) của các ma trận Jacobian này liên tục nhỏ hơn 1, tích trên sẽ tiến dần về 0 khi $k$ tăng (\textbf{vanishing gradient}) — khiến mô hình gần như không học được các phụ thuộc xa; ngược lại nếu lớn hơn 1, tích sẽ bùng nổ (\textbf{exploding gradient}). Đây là hạn chế căn bản của RNN nguyên bản, làm động lực cho sự ra đời của LSTM.
+
+Khi chuỗi dài, việc liên tục nhân các đạo hàm này có thể khiến gradient giảm rất nhanh về gần $0$, được gọi là hiện tượng \textbf{vanishing gradient}. Khi đó, thông tin từ những bước thời gian ở xa hầu như không còn đóng góp đáng kể vào quá trình cập nhật trọng số, khiến RNN khó học được các phụ thuộc dài hạn. Ngược lại, gradient cũng có thể tăng lên rất lớn qua nhiều bước, gây ra hiện tượng \textbf{exploding gradient}, làm quá trình huấn luyện trở nên không ổn định.
+
+Những hạn chế trên, đặc biệt là vấn đề vanishing gradient khi xử lý các phụ thuộc dài hạn, là một trong những động lực chính dẫn đến sự phát triển của các kiến trúc RNN có cơ chế cổng như \textbf{Long Short-Term Memory (LSTM)} và sau đó là \textbf{Gated Recurrent Unit (GRU)}.
 
 \section{Long Short-Term Memory (LSTM)}
 
-LSTM (Hochreiter và Schmidhuber, 1997) khắc phục vấn đề vanishing gradient của RNN bằng cách bổ sung một \textbf{trạng thái cell (cell state)} $C_t$ — một "đường cao tốc" thông tin chạy xuyên suốt chuỗi thời gian, chỉ trải qua các phép biến đổi tuyến tính đơn giản (nhân và cộng theo từng phần tử) thay vì phải đi qua hàm kích hoạt phi tuyến ở mỗi bước như trạng thái ẩn của RNN. Nhờ đó, gradient có thể lan truyền ngược qua nhiều bước thời gian mà ít bị suy giảm hơn.
+Long Short-Term Memory (LSTM), được đề xuất bởi Hochreiter và Schmidhuber (1997), là một kiến trúc mở rộng của RNN nhằm cải thiện khả năng học các quan hệ phụ thuộc dài hạn trong dữ liệu chuỗi. So với RNN truyền thống, điểm khác biệt quan trọng của LSTM là việc bổ sung một \textbf{trạng thái cell} (\textit{cell state}) ký hiệu là $C_t$. Trạng thái này đóng vai trò như một kênh lưu trữ thông tin xuyên suốt theo trục thời gian, cho phép thông tin quan trọng được duy trì qua nhiều bước liên tiếp với ít biến đổi hơn. Nhờ đó, quá trình lan truyền gradient ngược qua thời gian trở nên ổn định hơn, từ đó làm giảm ảnh hưởng của hiện tượng vanishing gradient vốn là hạn chế điển hình của RNN nguyên bản.
 
-LSTM điều khiển luồng thông tin ra/vào cell state thông qua ba \textbf{cổng (gate)}, mỗi cổng là một lớp sigmoid cho giá trị trong $[0,1]$ đóng vai trò "van" điều tiết:
+Bên cạnh trạng thái cell, LSTM còn sử dụng các \textbf{cổng điều khiển} (\textit{gates}) để kiểm soát luồng thông tin đi vào, được giữ lại hay được đưa ra khỏi bộ nhớ. Mỗi cổng được xây dựng bằng hàm sigmoid, cho đầu ra trong khoảng $[0,1]$, nhờ đó có thể được hiểu như một cơ chế ``đóng -- mở'' để điều tiết mức độ truyền thông tin. Tại thời điểm $t$, LSTM nhận đầu vào hiện tại $x_t$ và trạng thái ẩn của bước trước $h_{t-1}$ để tính toán các đại lượng trung gian như sau.
 
-\textbf{Cổng quên (Forget gate)} — quyết định giữ lại bao nhiêu phần trăm thông tin từ cell state cũ:
+Trước hết, \textbf{cổng quên} (\textit{forget gate}) xác định mức độ thông tin từ trạng thái cell trước đó $C_{t-1}$ cần được giữ lại:
+
 \begin{equation}
 f_t = \sigma(W_f x_t + U_f h_{t-1} + b_f)
 \end{equation}
 
-\textbf{Cổng vào (Input gate)} và \textbf{trạng thái cell ứng viên} — quyết định thông tin mới nào sẽ được thêm vào:
+Trong đó, nếu một phần tử của $f_t$ có giá trị gần $1$ thì thông tin tương ứng trong $C_{t-1}$ gần như được giữ nguyên; ngược lại, nếu giá trị gần $0$ thì thông tin đó sẽ bị loại bỏ phần lớn.
+
+Tiếp theo, \textbf{cổng vào} (\textit{input gate}) quyết định mức độ thông tin mới sẽ được ghi vào trạng thái cell:
+
 \begin{equation}
 i_t = \sigma(W_i x_t + U_i h_{t-1} + b_i)
 \end{equation}
+
+Song song với đó, mạng tính một \textbf{trạng thái cell ứng viên} thể hiện nội dung mới có thể được bổ sung vào bộ nhớ:
+
 \begin{equation}
 \tilde{C}_t = \tanh(W_C x_t + U_C h_{t-1} + b_C)
 \end{equation}
 
-\textbf{Cập nhật trạng thái cell} — kết hợp phần giữ lại (qua cổng quên) và phần thêm mới (qua cổng vào):
+Từ hai thành phần trên, trạng thái cell tại thời điểm $t$ được cập nhật bằng cách kết hợp thông tin cũ cần giữ lại với thông tin mới cần bổ sung:
+
 \begin{equation}
 C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t
 \end{equation}
 
-\textbf{Cổng ra (Output gate)} và \textbf{trạng thái ẩn} — quyết định phần nào của cell state được "lộ ra" thành đầu ra:
+Trong công thức này, ký hiệu $\odot$ biểu diễn phép nhân theo từng phần tử. Thành phần $f_t \odot C_{t-1}$ cho biết phần thông tin cũ còn được duy trì, trong khi $i_t \odot \tilde{C}_t$ biểu diễn phần thông tin mới được thêm vào bộ nhớ.
+
+Sau khi trạng thái cell mới $C_t$ được hình thành, \textbf{cổng ra} (\textit{output gate}) sẽ quyết định phần nào của thông tin trong cell state được sử dụng để tạo ra trạng thái ẩn tại thời điểm hiện tại:
+
 \begin{equation}
 o_t = \sigma(W_o x_t + U_o h_{t-1} + b_o)
 \end{equation}
+
 \begin{equation}
 h_t = o_t \odot \tanh(C_t)
 \end{equation}
+
+Như vậy, trạng thái ẩn $h_t$ không phải là toàn bộ nội dung của $C_t$, mà là phần thông tin đã được ``lọc'' qua cổng ra. Trạng thái này vừa đóng vai trò đầu ra của ô nhớ tại thời điểm $t$, vừa được truyền sang bước thời gian tiếp theo cùng với trạng thái cell $C_t$.
 
 \begin{figure}[H]
 \centering
@@ -211,35 +236,37 @@ Hình~\ref{fig:lstm} minh họa luồng thông tin trong một cell LSTM: đư�
 
 \section{Gated Recurrent Unit (GRU)}
 
-GRU (Cho và cộng sự, 2014) là một biến thể \textbf{đơn giản hóa} của LSTM, được thiết kế với động lực giữ lại khả năng kiểm soát luồng thông tin dài hạn của LSTM nhưng với ít cổng và ít tham số hơn. So với LSTM, GRU có hai thay đổi cấu trúc chính:
-\begin{itemize}
-    \item \textbf{Gộp cổng quên và cổng vào} thành một \textbf{cổng cập nhật (update gate)} $z_t$ duy nhất, điều khiển đồng thời việc "quên" trạng thái cũ và "nạp" trạng thái mới thông qua một phép nội suy tuyến tính duy nhất.
-    \item \textbf{Loại bỏ cell state riêng biệt}: GRU chỉ có một trạng thái ẩn $h_t$ duy nhất, vừa đóng vai trò "bộ nhớ dài hạn" (tương tự $C_t$ của LSTM) vừa là đầu ra tại mỗi bước — không cần cổng ra $o_t$ và phép biến đổi $\tanh(C_t)$ riêng như LSTM.
-\end{itemize}
+Gated Recurrent Unit (GRU), được đề xuất bởi Cho và cộng sự (2014), là một kiến trúc mạng nơ-ron hồi quy có cổng được xây dựng nhằm cải thiện khả năng học các phụ thuộc dài hạn của RNN truyền thống. Tương tự LSTM, GRU sử dụng các cổng điều khiển để điều tiết luồng thông tin qua thời gian, nhưng có cấu trúc gọn hơn do không duy trì trạng thái ô nhớ $C_t$ riêng biệt và chỉ sử dụng hai cổng chính: \textbf{cổng đặt lại} (\textit{reset gate}) và \textbf{cổng cập nhật} (\textit{update gate}).
 
-Tại mỗi bước thời gian $t$, với đầu vào $x_t$ và trạng thái ẩn trước đó $h_{t-1}$, GRU tính toán như sau:
+Tại thời điểm $t$, với đầu vào $x_t$ và trạng thái ẩn trước đó $h_{t-1}$, cổng đặt lại được xác định bởi:
 
-\textbf{Cổng đặt lại (Reset gate)} — quyết định mức độ "quên" thông tin quá khứ khi tính trạng thái ứng viên:
 \begin{equation}
-r_t = \sigma(W_r x_t + U_r h_{t-1} + b_r)
+r_t = \sigma(W_r x_t + U_r h_{t-1} + b_r),
 \end{equation}
 
-\textbf{Cổng cập nhật (Update gate)} — quyết định tỷ lệ giữa việc giữ lại trạng thái cũ và cập nhật bằng trạng thái ứng viên mới:
+trong đó $r_t$ kiểm soát mức độ thông tin từ $h_{t-1}$ được sử dụng khi xây dựng trạng thái ứng viên. Khi $r_t$ có giá trị gần $0$, ảnh hưởng của thông tin quá khứ tương ứng được giảm bớt; ngược lại, giá trị gần $1$ cho phép thông tin đó được giữ lại nhiều hơn.
+
+Cổng cập nhật được tính theo:
+
 \begin{equation}
-z_t = \sigma(W_z x_t + U_z h_{t-1} + b_z)
+z_t = \sigma(W_z x_t + U_z h_{t-1} + b_z),
 \end{equation}
 
-\textbf{Trạng thái ẩn ứng viên (Candidate hidden state)}:
+và có nhiệm vụ điều tiết tỷ lệ giữa việc duy trì trạng thái ẩn trước đó và tiếp nhận thông tin mới.
+
+Dựa trên cổng đặt lại, trạng thái ẩn ứng viên được xác định bởi:
+
 \begin{equation}
-\tilde{h}_t = \tanh\big(W_h x_t + U_h (r_t \odot h_{t-1}) + b_h\big)
+\tilde{h}_t = \tanh\left( W_h x_t + U_h(r_t \odot h_{t-1}) + b_h \right),
 \end{equation}
 
-\textbf{Trạng thái ẩn cập nhật} — nội suy tuyến tính giữa trạng thái cũ và trạng thái ứng viên, với hệ số nội suy do $z_t$ quyết định:
+trong đó $\odot$ biểu diễn phép nhân theo từng phần tử. Trạng thái ẩn tại thời điểm $t$ sau đó được cập nhật theo:
+
 \begin{equation}
-h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t
+h_t = z_t \odot h_{t-1} + (1-z_t)\odot\tilde{h}_t.
 \end{equation}
 
-Trong đó $\sigma(\cdot)$ là hàm sigmoid, $\odot$ là phép nhân theo từng phần tử (Hadamard product), $W_{(\cdot)}, U_{(\cdot)}, b_{(\cdot)}$ là các trọng số và hệ số chệch cần học.
+Theo quy ước trên, khi $z_t$ tiến gần $1$, trạng thái trước đó $h_{t-1}$ được giữ lại nhiều hơn; ngược lại, khi $z_t$ tiến gần $0$, trạng thái mới chủ yếu được xác định bởi trạng thái ứng viên $\tilde{h}_t$. Cơ chế này cho phép GRU duy trì thông tin quan trọng qua nhiều bước thời gian, qua đó hỗ trợ việc học các phụ thuộc dài hạn trong dữ liệu tuần tự.
 
 \begin{figure}[H]
 \centering
@@ -248,11 +275,13 @@ Trong đó $\sigma(\cdot)$ là hàm sigmoid, $\odot$ là phép nhân theo từng
 \label{fig:gru}
 \end{figure}
 
-Hình~\ref{fig:gru} minh họa bước tính Reset gate $\mathbf{R}_t$, Update gate $\mathbf{Z}_t$ và trạng thái ẩn ứng viên $\tilde{\mathbf{H}}_t$: khác với LSTM, GRU không có đường cell state riêng — $\mathbf{H}_{t-1}$ được "sao chép" thành hai nhánh, một đi thẳng vào hai cổng $\mathbf{R}_t, \mathbf{Z}_t$ (cùng $\mathbf{X}_t$), một được nhân theo phần tử với $\mathbf{R}_t$ trước khi cùng $\mathbf{X}_t$ tạo thành trạng thái ứng viên $\tilde{\mathbf{H}}_t$ qua $\tanh(\cdot)$. Trạng thái ẩn cuối cùng $\mathbf{H}_t$ (không vẽ trong hình, xem công thức ở trên) chỉ là bước nội suy tuyến tính đơn giản giữa $\mathbf{H}_{t-1}$ và $\tilde{\mathbf{H}}_t$ theo hệ số $\mathbf{Z}_t$, không cần thêm phép biến đổi phi tuyến nào. Khi $z_t \to 0$, trạng thái ẩn gần như được giữ nguyên qua bước thời gian — cơ chế then chốt giúp GRU giảm thiểu vanishing gradient tương tự cell state của LSTM; khi $z_t \to 1$, trạng thái được thay gần như hoàn toàn bằng trạng thái ứng viên mới.
+Hình~\ref{fig:gru} minh họa bước tính Reset gate $\mathbf{R}_t$, Update gate $\mathbf{Z}_t$ và trạng thái ẩn ứng viên $\tilde{\mathbf{H}}_t$: khác với LSTM, GRU không có đường cell state riêng — $\mathbf{H}_{t-1}$ được "sao chép" thành hai nhánh, một đi thẳng vào hai cổng $\mathbf{R}_t, \mathbf{Z}_t$ (cùng $\mathbf{X}_t$), một được nhân theo phần tử với $\mathbf{R}_t$ trước khi cùng $\mathbf{X}_t$ tạo thành trạng thái ứng viên $\tilde{\mathbf{H}}_t$ qua $\tanh(\cdot)$. Trạng thái ẩn cuối cùng $\mathbf{H}_t$ (không vẽ trong hình, xem công thức ở trên) chỉ là bước nội suy tuyến tính đơn giản giữa $\mathbf{H}_{t-1}$ và $\tilde{\mathbf{H}}_t$ theo hệ số $\mathbf{Z}_t$, không cần thêm phép biến đổi phi tuyến nào. Khi $z_t \to 1$, trạng thái ẩn gần như được giữ nguyên qua bước thời gian — cơ chế then chốt giúp GRU giảm thiểu vanishing gradient tương tự cell state của LSTM; khi $z_t \to 0$, trạng thái được thay gần như hoàn toàn bằng trạng thái ứng viên mới.
+
+So với LSTM, việc sử dụng một trạng thái ẩn duy nhất và hai cổng điều khiển giúp GRU có cấu trúc gọn hơn và thường có ít tham số hơn, trong khi vẫn duy trì khả năng mô hình hóa các phụ thuộc dài hạn tốt hơn RNN truyền thống.
 
 Với bài toán dự báo hồi quy (không phải phân loại) tại một horizon $h$ cố định, cho trước ($h \geq 1$ là số bước thời gian cần dự báo trước, được chọn trước khi huấn luyện), đầu ra cuối cùng của mô hình là trạng thái ẩn tại bước thời gian cuối của cửa sổ đầu vào, đưa qua một lớp fully-connected tuyến tính để cho ra giá trị dự báo của biến mục tiêu tại bước $t+h$:
 \begin{equation}
-\hat{y}_{t+h} = W_{fc}\, h_{w} + b_{fc}
+\hat{y}_{t+h} = W_{fc}\, h_{w} + b_{fc},
 \end{equation}
 với $h_w$ là trạng thái ẩn tại bước cuối cùng ($w$) của cửa sổ đầu vào. Horizon $h$ ở đây là một \textbf{siêu tham số kiến trúc}: mỗi model chỉ được huấn luyện để dự báo đúng một giá trị $h$ duy nhất — muốn đổi sang horizon khác phải huấn luyện lại từ đầu.
 
@@ -260,13 +289,15 @@ Trong thực tế, nhiều bài toán cần dự báo \textbf{đồng thời nhi
 
 \subsection*{Recursive GRU}
 
-Cách đơn giản nhất để dự báo nhiều bước mà \textbf{không cần huấn luyện lại} là tái sử dụng nguyên một model đã huấn luyện sẵn cho horizon $h=1$ (kiến trúc ở trên với $h=1$) — bắt buộc phải là $h=1$ vì đây là đơn vị bước nhỏ nhất, mỗi lần gọi model chỉ trượt cửa sổ đi đúng 1 bước, nhờ đó có thể gọi lặp lại $H$ lần liên tiếp để đi xa dần — gọi là chiến lược \textbf{Recursive (đệ quy)}.
+Một cách tiếp cận đơn giản để thực hiện dự báo nhiều bước tương lai mà không cần huấn luyện một mô hình mới là sử dụng lặp lại mô hình GRU dự báo một bước ($h=1$) đã được huấn luyện trước. Chiến lược này được gọi là \textbf{recursive forecasting}. Ý tưởng cốt lõi là sau khi mô hình dự báo giá trị tại thời điểm $t+1$, giá trị dự báo đó sẽ được đưa ngược trở lại chuỗi đầu vào để tiếp tục dự báo cho thời điểm $t+2$, và quá trình này được lặp lại cho đến khi đạt horizon mong muốn $H$.
 
-Tại bước thứ $k$ ($k = 1, \dots, H$), model nhận cửa sổ $w$ giờ gần nhất và cho ra dự đoán:
+Cụ thể, tại bước dự báo thứ $k$ ($k=1,\dots,H$), mô hình tạo ra dự báo:
+
 \begin{equation}
-\hat{y}_{t+k} = f_\theta\big(\tilde{x}_{t-w+k}, \dots, \tilde{x}_{t-1+k}\big)
+\hat{y}_{t+k} = f_{\theta}\big(\tilde{x}_{t-w+k}, \dots, \tilde{x}_{t-1+k}\big),
 \end{equation}
-trong đó $f_\theta$ là model GRU horizon=1 đã huấn luyện, và $\tilde{x}_i$ là vector đặc trưng "tổng hợp" tại thời điểm $i$: nếu $i \leq t$ (đã có dữ liệu thật) thì $\tilde{x}_i = x_i$; nếu $i > t$ (thuộc tương lai, chưa quan trắc) thì thành phần mục tiêu (biến cần dự báo) của $\tilde{x}_i$ được thay bằng chính giá trị model \textbf{vừa dự đoán} ở bước trước đó ($\hat{y}_i$), còn các thành phần đặc trưng ngoại sinh khác thường dùng \textbf{persistence} — giữ nguyên giá trị thật cuối cùng đã biết, do chưa có dự báo riêng cho chúng — trừ những đặc trưng có thể tính \textbf{chính xác} cho tương lai (ví dụ đặc trưng thời gian dạng chu kỳ, vốn là hàm xác định, không cần dự báo).
+
+trong đó $f_{\theta}$ là mô hình GRU dự báo một bước đã được huấn luyện, còn $\tilde{x}_i$ là vector đặc trưng tại thời điểm $i$. Nếu $i \leq t$, ta có $\tilde{x}_i = x_i$, tức là sử dụng dữ liệu quan trắc thực tế. Nếu $i > t$, thành phần mục tiêu trong $\tilde{x}_i$ được thay thế bằng chính giá trị dự báo trước đó $\hat{y}_i$. Đối với các đặc trưng ngoại sinh chưa có giá trị trong tương lai, một lựa chọn thực hành phổ biến là sử dụng giả định \textit{persistence}, tức giữ nguyên giá trị cuối cùng đã biết. Riêng các đặc trưng thời gian có tính xác định, chẳng hạn như giờ trong ngày hoặc ngày trong tuần được mã hóa tuần hoàn, có thể được tính trực tiếp cho các thời điểm tương lai.
 
 \begin{figure}[H]
 \centering
@@ -305,15 +336,13 @@ trong đó $f_\theta$ là model GRU horizon=1 đã huấn luyện, và $\tilde{x
   \draw[-{Latex[length=1.5mm]}, gray, dashed] (p1.south) to[out=-90,in=90] (b3.north);
   \draw[-{Latex[length=1.5mm]}, gray, dashed] (p2.south) to[out=-90,in=90] (c3.north);
 \end{tikzpicture}
-\caption{Recursive GRU: cửa sổ trượt, phần dự đoán ở bước trước bị đưa ngược vào làm input cho bước sau}
+\caption{Recursive GRU: giá trị dự báo ở bước trước được đưa ngược trở lại làm đầu vào cho bước sau}
 \label{fig:recursive}
 \end{figure}
 
-Hình~\ref{fig:recursive} minh họa cơ chế này qua 3 bước đầu tiên: ở Bước 1, cửa sổ input hoàn toàn là dữ liệu thật; sang Bước 2, giá trị $\hat{y}_{w+1}$ vừa sinh ra ở Bước 1 được "trượt" vào cửa sổ, thay thế cho phần dữ liệu thật cũ nhất bị loại ra; đến Bước 3, cửa sổ đã chứa 2 giá trị tự dự đoán. Càng dự đoán xa, tỷ lệ dữ liệu thật trong cửa sổ càng giảm, dần được thay thế bởi chính dự đoán của model.
+Hình~\ref{fig:recursive} minh họa cơ chế recursive qua ba bước đầu tiên. Ở Bước 1, cửa sổ đầu vào hoàn toàn gồm dữ liệu thực tế và mô hình tạo ra dự báo đầu tiên. Sang Bước 2, giá trị vừa dự báo được đưa vào cửa sổ đầu vào thay cho quan sát cũ nhất đã bị loại ra do cửa sổ trượt. Đến Bước 3, cửa sổ đầu vào đã chứa hai giá trị dự báo từ các bước trước. Như vậy, khi số bước dự báo tăng lên, số lượng giá trị dự báo được đưa ngược vào đầu vào cũng tăng dần, trong khi tỷ lệ dữ liệu thực tế trong cửa sổ giảm xuống.
 
-\textbf{Ưu điểm}: không cần huấn luyện model mới, tận dụng nguyên vẹn model horizon=1 đã có sẵn.
-
-\textbf{Nhược điểm}: vì $\hat{y}_{t+k}$ phụ thuộc vào các dự đoán $\hat{y}_{t+1}, \dots, \hat{y}_{t+k-1}$ ở những bước trước (thay vì dữ liệu thật), sai số của mỗi bước sẽ \textbf{dồn tích} (error compounding) qua các bước tiếp theo — bước dự đoán càng xa mốc gốc, độ tin cậy càng giảm nhanh. Ngoài ra, giả định persistence cho các đặc trưng ngoại sinh cũng là một nguồn sai lệch bổ sung nếu các đặc trưng này thực sự biến động trong giai đoạn dự báo.
+Ưu điểm của chiến lược này là tận dụng trực tiếp mô hình dự báo một bước đã có sẵn mà không cần huấn luyện một mô hình riêng cho từng horizon. Tuy nhiên, hạn chế chính là hiện tượng \textbf{tích lũy sai số} (\textit{error compounding}): sai số ở các bước dự báo đầu sẽ tiếp tục lan sang các bước sau do các giá trị dự báo được sử dụng làm đầu vào cho chính mô hình. Vì vậy, horizon dự báo càng xa thì độ tin cậy của kết quả thường càng giảm. Bên cạnh đó, việc giả định persistence đối với các đặc trưng ngoại sinh cũng có thể làm phát sinh thêm sai lệch nếu các đặc trưng này biến động đáng kể trong giai đoạn dự báo.
 
 \subsection*{Direct GRU (Vector Output)}
 
