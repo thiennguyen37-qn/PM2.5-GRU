@@ -342,7 +342,7 @@ trong đó $f_{\theta}$ là mô hình GRU dự báo một bước đã được 
 
 Hình~\ref{fig:recursive} minh họa cơ chế recursive qua ba bước đầu tiên. Ở Bước 1, cửa sổ đầu vào hoàn toàn gồm dữ liệu thực tế và mô hình tạo ra dự báo đầu tiên. Sang Bước 2, giá trị vừa dự báo được đưa vào cửa sổ đầu vào thay cho quan sát cũ nhất đã bị loại ra do cửa sổ trượt. Đến Bước 3, cửa sổ đầu vào đã chứa hai giá trị dự báo từ các bước trước. Như vậy, khi số bước dự báo tăng lên, số lượng giá trị dự báo được đưa ngược vào đầu vào cũng tăng dần, trong khi tỷ lệ dữ liệu thực tế trong cửa sổ giảm xuống.
 
-Ưu điểm của chiến lược này là tận dụng trực tiếp mô hình dự báo một bước đã có sẵn mà không cần huấn luyện một mô hình riêng cho từng horizon. Tuy nhiên, hạn chế chính là hiện tượng \textbf{tích lũy sai số} (\textit{error compounding}): sai số ở các bước dự báo đầu sẽ tiếp tục lan sang các bước sau do các giá trị dự báo được sử dụng làm đầu vào cho chính mô hình. Vì vậy, horizon dự báo càng xa thì độ tin cậy của kết quả thường càng giảm. Bên cạnh đó, việc giả định persistence đối với các đặc trưng ngoại sinh cũng có thể làm phát sinh thêm sai lệch nếu các đặc trưng này biến động đáng kể trong giai đoạn dự báo.
+Ưu điểm của chiến lược này là tận dụng trực tiếp mô hình dự báo một bước đã có sẵn mà không cần huấn luyện một mô hình riêng cho từng horizon. Tuy nhiên, hạn chế chính là hiện tượng \textbf{tích lũy sai số} (\textit{error compounding}): sai số lan dần qua các bước dự báo, khiến độ tin cậy giảm khi horizon càng xa.
 
 \subsection*{Direct Multi-output GRU}
 
@@ -487,9 +487,7 @@ Tuy nhiên, các đầu ra không hoàn toàn độc lập với nhau. Tất c�
 Ưu điểm chính của Direct Multi-output GRU là loại bỏ cơ chế lan truyền sai số đặc trưng của dự báo Recursive. Do không sử dụng các giá trị dự đoán trước đó làm đầu vào, một sai số lớn tại $\hat y_{t+1}$ không trực tiếp làm thay đổi đầu vào dùng để tính $\hat y_{t+2}$ hoặc các horizon xa hơn. Bên cạnh đó, toàn bộ $H$ bước được sinh trong một forward pass nên quá trình suy luận thường nhanh hơn so với việc gọi mô hình $H$ lần liên tiếp như trong Recursive forecasting.
 
 \textbf{Nhược điểm.}
-Đổi lại, mô hình phải học đồng thời ánh xạ từ cùng một biểu diễn lịch sử sang nhiều horizon khác nhau. Các dự báo gần và xa có độ khó và đặc điểm thống kê khác nhau, trong khi chúng vẫn chia sẻ cùng một Encoder GRU. Vì vậy, biểu diễn $h_w$ phải chứa thông tin hữu ích cho toàn bộ khoảng dự báo, thay vì chỉ tối ưu riêng cho bước $t+1$. Trong một số trường hợp, điều này có thể làm giảm nhẹ hiệu quả tại horizon rất gần so với một mô hình được huấn luyện chuyên biệt cho one-step forecasting.
-
-Ngoài ra, kiến trúc đầu ra phụ thuộc trực tiếp vào giá trị $H$. Chẳng hạn, một mô hình được huấn luyện với $H=6$ sẽ có lớp đầu ra $\text{Linear}(d_h,6)$ và sinh trực tiếp sáu giá trị tương ứng với các thời điểm từ $t+1$ đến $t+6$. Nếu muốn thay đổi horizon dự báo sang $H=12$, cần thay đổi kích thước lớp đầu ra thành $\text{Linear}(d_h,12)$ và thông thường phải huấn luyện lại mô hình.
+Đổi lại, mô hình phải học đồng thời ánh xạ từ cùng một biểu diễn lịch sử sang nhiều horizon khác nhau. Ngoài ra, kiến trúc đầu ra phụ thuộc trực tiếp vào giá trị $H$. Chẳng hạn, một mô hình được huấn luyện với $H=6$ sẽ có lớp đầu ra $\text{Linear}(d_h,6)$ và sinh trực tiếp sáu giá trị tương ứng với các thời điểm từ $t+1$ đến $t+6$. Nếu muốn thay đổi horizon dự báo sang $H=12$, cần thay đổi kích thước lớp đầu ra thành $\text{Linear}(d_h,12)$ và thông thường phải huấn luyện lại mô hình.
 
 % ==================== CHƯƠNG 2: ỨNG DỤNG ====================
 \chapter{Ứng dụng dự báo nồng độ PM2.5}
