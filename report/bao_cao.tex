@@ -105,7 +105,7 @@ Trên cơ sở đó, báo cáo sẽ trình bày lần lượt quá trình chuẩ
 
 \section{Bài toán dự báo chuỗi thời gian bằng học sâu}
 
-Khác với các bài toán học có giám sát thông thường, dữ liệu chuỗi thời gian có tính tuần tự: giá trị tại thời điểm $t$ có quan hệ phụ thuộc với các giá trị trong quá khứ. Cách tiếp cận phổ biến để chuyển bài toán dự báo chuỗi thời gian thành bài toán học có giám sát là kỹ thuật \textbf{sliding window}: với một cửa sổ quan sát độ dài $w$ (window size) và một khoảng dự báo $h$ (horizon), ta xây dựng cặp dữ liệu
+Khác với các bài toán học có giám sát thông thường, dữ liệu chuỗi thời gian có tính tuần tự: giá trị tại thời điểm $t$ có quan hệ phụ thuộc với các giá trị trong quá khứ. Cách tiếp cận phổ biến để chuyển bài toán dự báo chuỗi thời gian thành bài toán học có giám sát là kỹ thuật \textbf{sliding window} (Brockwell \& Davis, 2002): với một cửa sổ quan sát độ dài $w$ (window size) và một khoảng dự báo $h$ (horizon), ta xây dựng cặp dữ liệu
 
 \[
 X_t = (x_{t-w+1}, x_{t-w+2}, \dots, x_t) \quad \longrightarrow \quad y_t
@@ -346,7 +346,7 @@ Hình~\ref{fig:recursive} minh họa cơ chế recursive qua ba bước đầu t
 
 \subsection*{Direct Multi-output GRU}
 
-Một hạn chế quan trọng của chiến lược Recursive là các giá trị dự đoán ở những bước trước được đưa trở lại làm đầu vào cho những bước sau. Do đó, sai số xuất hiện ở các horizon gần có thể tiếp tục lan truyền và ảnh hưởng đến các dự báo xa hơn. Chiến lược Direct Multi-output giải quyết vấn đề này bằng cách thay đổi cách xây dựng đầu ra của mô hình: thay vì dự báo từng bước một cách tuần tự, mô hình được huấn luyện để dự báo trực tiếp toàn bộ $H$ bước tương lai trong một lần forward pass.
+Một hạn chế quan trọng của chiến lược Recursive là các giá trị dự đoán ở những bước trước được đưa trở lại làm đầu vào cho những bước sau. Do đó, sai số xuất hiện ở các horizon gần có thể tiếp tục lan truyền và ảnh hưởng đến các dự báo xa hơn. Chiến lược Direct Multi-output — hay còn gọi là Multi-Input Multi-Output (Bontempi, 2008) — giải quyết vấn đề này bằng cách thay đổi cách xây dựng đầu ra của mô hình: thay vì dự báo từng bước một cách tuần tự, mô hình được huấn luyện để dự báo trực tiếp toàn bộ $H$ bước tương lai trong một lần forward pass.
 
 Với một cửa sổ lịch sử có độ dài $w$ kết thúc tại thời điểm $t$,
 
@@ -627,7 +627,7 @@ Hình~\ref{fig:seasonal} cho thấy PM2.5 đạt đỉnh vào các tháng 1--4 (
 \label{fig:whoqcvn}
 \end{figure}
 
-Trong tổng số 1.453 ngày có dữ liệu, có \textbf{510 ngày (35.1\%)} có nồng độ PM2.5 trung bình 24h vượt ngưỡng khuyến nghị của WHO Air Quality Guideline 2021 (15~$\mu$g/m$^3$) — cho thấy hơn một phần ba số ngày trong giai đoạn quan sát không đạt chuẩn an toàn theo khuyến nghị quốc tế. Ngược lại, \textbf{không có ngày nào (0.0\%)} vượt ngưỡng \textbf{QCVN 05:2013/BTNMT} — \textbf{Quy chuẩn kỹ thuật quốc gia về chất lượng không khí xung quanh}, do \textbf{Bộ Tài nguyên và Môi trường (BTNMT)} ban hành năm 2013 — của Việt Nam (50~$\mu$g/m$^3$) (Hình~\ref{fig:whoqcvn}) — phản ánh khoảng cách đáng kể giữa quy chuẩn hiện hành trong nước và chuẩn khuyến nghị siết chặt hơn của WHO.
+Trong tổng số 1.453 ngày có dữ liệu, có \textbf{510 ngày (35.1\%)} có nồng độ PM2.5 trung bình 24h vượt ngưỡng khuyến nghị của WHO Air Quality Guideline 2021 (15~$\mu$g/m$^3$) — cho thấy hơn một phần ba số ngày trong giai đoạn quan sát không đạt chuẩn an toàn theo khuyến nghị quốc tế. Ngược lại, \textbf{không có ngày nào (0.0\%)} vượt ngưỡng \textbf{QCVN 05:2023/BTNMT} — \textbf{Quy chuẩn kỹ thuật quốc gia về chất lượng không khí}, do \textbf{Bộ Tài nguyên và Môi trường (BTNMT)} ban hành năm 2023 — của Việt Nam (50~$\mu$g/m$^3$) (Hình~\ref{fig:whoqcvn}) — phản ánh khoảng cách đáng kể giữa quy chuẩn hiện hành trong nước và chuẩn khuyến nghị siết chặt hơn của WHO.
 
 \begin{figure}[H]
 \centering
@@ -864,9 +864,15 @@ Tương ứng với từng hạn chế trên, hướng phát triển tiếp theo
 \addcontentsline{toc}{chapter}{Tài liệu tham khảo}
 
 \begin{enumerate}
+    \item Brockwell, P. J., \& Davis, R. A. (Eds.). (2002). \textit{Introduction to Time Series and Forecasting}. Springer New York.
+    \item Hochreiter, S., \& Schmidhuber, J. (1997). Long short-term memory. \textit{Neural Computation}, 9(8), 1735–1780.
     \item Zhang, A., Lipton, Z. C., Li, M., \& Smola, A. J. \textit{Dive into Deep Learning}. Cambridge University Press, 2023. \url{https://d2l.ai} — nguồn Hình~\ref{fig:lstm} (Kiến trúc LSTM cell) và Hình~\ref{fig:gru} (Kiến trúc GRU).
+    \item Cho, K., Van Merriënboer, B., Gulçehre, Ç., Bahdanau, D., Bougares, F., Schwenk, H., \& Bengio, Y. (2014). Learning phrase representations using RNN encoder–decoder for statistical machine translation. In \textit{Proceedings of the 2014 Conference on Empirical Methods in Natural Language Processing (EMNLP)} (pp. 1724–1734).
+    \item Bontempi, G. (2008). Long term time series prediction with multi-input multi-output local learning. \textit{Proceedings of the 2nd European Symposium on Time Series Prediction (ESTSP)}, 145–154.
+    \item Open-Meteo. \textit{Air Quality API}. \url{https://open-meteo.com/} — nguồn dữ liệu chính của tiểu luận (Mục~2.1).
+    \item World Health Organization. (2021). \textit{WHO Global Air Quality Guidelines: Particulate Matter (PM2.5 and PM10), Ozone, Nitrogen Dioxide, Sulfur Dioxide and Carbon Monoxide}. World Health Organization. ISBN 978-92-4-003422-8. \url{https://www.who.int/publications/i/item/9789240034228} — nguồn ngưỡng khuyến nghị WHO ở Mục~2.2.
+    \item Bộ Tài nguyên và Môi trường. (2023). \textit{QCVN 05:2023/BTNMT — Quy chuẩn kỹ thuật quốc gia về chất lượng không khí} (ban hành kèm theo Thông tư số 01/2023/TT-BTNMT ngày 13 tháng 3 năm 2023) — nguồn ngưỡng QCVN ở Mục~2.2.
+    \item AQICN — World Air Quality Index Project. \textit{Air Quality Index (AQI) Scale}. \url{https://aqicn.org/scale/} — nguồn Hình~\ref{fig:aqiscale} và Hình~\ref{fig:aqiconversion}.
 \end{enumerate}
-
-\textit{(Danh sách tài liệu tham khảo sẽ được bổ sung thêm.)}
 
 \end{document}
