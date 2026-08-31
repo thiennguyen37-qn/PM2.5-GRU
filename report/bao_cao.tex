@@ -793,7 +793,7 @@ Vì Validate lúc này là một tập tách biệt thật sự khỏi Train, đ
 
 \section{Đánh giá mô hình: Walk-forward trên dữ liệu mới}
 
-Vì tập Test là dữ liệu thật hoàn toàn mới và mô hình dự báo trực tiếp trọn horizon 7 ngày trong một lượt, chiến lược \textbf{walk-forward theo từng khoảng thời gian} được áp dụng để tận dụng toàn bộ 28 ngày Test một cách công bằng và đáng tin cậy hơn một lượt dự báo duy nhất. Cụ thể, 28 ngày Test được chia thành \textbf{4 khoảng thời gian liên tiếp}, mỗi khoảng 7 ngày. Với khoảng thời gian đầu tiên, mô hình dự báo dựa trên 28 ngày lịch sử gần nhất đã biết (thuộc Pool). Sau khi giá trị thật của một khoảng thời gian được "quan sát", dữ liệu đó được dùng cho hai việc: (i) cập nhật cửa sổ lịch sử làm đầu vào cho khoảng thời gian kế tiếp, và (ii) \textbf{tinh chỉnh nhẹ} (fine-tune) lại trọng số mô hình — 5 epoch, với tốc độ học giảm 10 lần so với lúc huấn luyện ban đầu — nhằm giúp mô hình thích nghi phần nào với biến động mới quan sát được trước khi dự báo khoảng thời gian tiếp theo. Toàn bộ quá trình chỉ sử dụng giá trị thật đã biết làm đầu vào, không dùng lại dự báo của chính mô hình.
+Vì tập Test là dữ liệu thật hoàn toàn mới và mô hình dự báo trực tiếp trọn horizon 7 ngày trong một lượt, chiến lược \textbf{walk-forward theo từng khoảng thời gian} được áp dụng để tận dụng toàn bộ 28 ngày Test một cách công bằng và đáng tin cậy hơn một lượt dự báo duy nhất. Cụ thể, 28 ngày Test được chia thành \textbf{4 khoảng thời gian liên tiếp}, mỗi khoảng 7 ngày. Với khoảng thời gian đầu tiên, mô hình dự báo dựa trên 28 ngày lịch sử gần nhất đã biết. Sau khi giá trị thật của một khoảng thời gian được "quan sát", dữ liệu đó được dùng cho hai việc: (i) cập nhật cửa sổ lịch sử làm đầu vào cho khoảng thời gian kế tiếp, và (ii) \textbf{tinh chỉnh nhẹ} lại trọng số mô hình — 5 epoch, với tốc độ học giảm 10 lần so với lúc huấn luyện ban đầu — nhằm giúp mô hình thích nghi phần nào với biến động mới quan sát được trước khi dự báo khoảng thời gian tiếp theo. Toàn bộ quá trình chỉ sử dụng giá trị thật đã biết làm đầu vào, không dùng lại dự báo của chính mô hình.
 
 \subsection*{Kết quả dự báo theo từng khoảng thời gian}
 
@@ -817,11 +817,13 @@ Khoảng & Thời gian & MAE ($\mu$g/m$^3$) & RMSE ($\mu$g/m$^3$) \\
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/hybrid_prediction_walkforward.png}
-\caption{PM2.5: Thực tế và Dự báo walk-forward trên tập Test (đường chấm xám đánh dấu ranh giới giữa các khoảng thời gian)}
+\caption{PM2.5: Thực tế và Dự báo walk-forward trên tập Test}
 \label{fig:hybrid_pred}
 \end{figure}
 
-Khoảng thời gian 2 (03/08 -- 09/08) có sai số cao nhất trong 4 khoảng, trùng với giai đoạn PM2.5 thực tế sụt giảm mạnh nhất so với nền lịch sử mà mô hình đã học. Điều này cho thấy mô hình vẫn cần một khoảng thời gian nhất định để thích nghi hoàn toàn với một biến động giảm đột ngột và kéo dài. Ở các khoảng thời gian sau (3 và 4), khi nền PM2.5 mới đã dần ổn định, sai số giảm trở lại xuống mức thấp hơn cả khoảng thời gian đầu tiên.
+Hình~\ref{fig:hybrid_pred} cho thấy một đặc điểm chung ở cả 4 khoảng thời gian: đường dự báo có xu hướng khá phẳng trong nội bộ mỗi khoảng, trong khi đường thực tế biến động mạnh hơn nhiều theo từng ngày — hệ quả của việc mô hình dự báo trọn 7 ngày trong một lượt forward duy nhất từ một điểm xuất phát cố định, nên không thể điều chỉnh theo diễn biến thực tế xảy ra giữa chừng. Đáng chú ý, tại mỗi ranh giới giữa các khoảng thời gian, đường dự báo đều dịch chuyển khá sát về đúng mức nền thực tế của khoảng kế tiếp, thể hiện rõ hiệu quả của cơ chế cập nhật cửa sổ lịch sử và tinh chỉnh nhẹ sau mỗi khoảng.
+
+Khoảng thời gian 1 minh họa rõ đặc điểm đó: thực tế tăng dần rồi bật lên đỉnh đột biến 16.15~$\mu$g/m$^3$ giữa khoảng, trong khi dự báo gần như đi ngang quanh mức 13~$\mu$g/m$^3$, bỏ lỡ hoàn toàn đỉnh này. Khoảng thời gian 2 là trường hợp bộc lộ rõ nhất hạn chế của tính "phẳng" này: thực tế giảm liên tục và dốc từ 14.3 xuống 2.4~$\mu$g/m$^3$ chỉ trong 7 ngày, trong khi dự báo gần như đi ngang quanh mức 10.6--11.6~$\mu$g/m$^3$, không theo kịp tốc độ giảm và gây ra sai số MAE cao nhất trong 4 khoảng. Ngược lại, Khoảng thời gian 3 có sai số thấp nhất: sau hai ngày đầu dự báo cao hơn thực tế khá nhiều, đường dự báo nhanh chóng bám sát biến động tăng nhẹ của thực tế trong suốt phần còn lại của khoảng. Ở Khoảng thời gian 4, dự báo liên tục nằm cao hơn thực tế trong phần lớn 7 ngày, nhất quán với thiên lệch dự báo cao hơn thực tế đã ghi nhận ở residual tổng hợp toàn tập Test.
 
 \subsection*{Phân tích Residual}
 
@@ -832,7 +834,9 @@ Khoảng thời gian 2 (03/08 -- 09/08) có sai số cao nhất trong 4 khoảng
 \label{fig:hybrid_resid}
 \end{figure}
 
-Residual tổng hợp trên toàn bộ 28 ngày Test có \textbf{mean $= -2.364\,\mu$g/m$^3$} và \textbf{std $= 2.653\,\mu$g/m$^3$} (Hình~\ref{fig:hybrid_resid}). Giá trị mean âm cho thấy mô hình vẫn còn thiên lệch (bias) hệ thống theo hướng dự báo cao hơn thực tế — hệ quả trực tiếp của việc nền PM2.5 trong giai đoạn Test thấp hơn đáng kể so với những gì mô hình quan sát được trong phần lớn dữ liệu huấn luyện. Độ lệch này chưa được loại bỏ hoàn toàn — cho thấy đây là một hướng còn có thể cải thiện thêm.
+Residual tổng hợp trên toàn bộ 28 ngày Test có \textbf{mean $= -2.364,\mu$g/m$^3$} và \textbf{std $= 2.653,\mu$g/m$^3$} như thể hiện trong Hình~\ref{fig:hybrid_resid}. Xét theo thời gian, residual phần lớn nằm dưới mức 0, cho thấy dự báo của mô hình thường cao hơn giá trị PM2.5 thực tế. Sai lệch lớn nhất xuất hiện vào đầu tháng 8, khi residual giảm xuống khoảng $-9.2,\mu$g/m$^3$. Đây cũng là giai đoạn PM2.5 thực tế giảm mạnh trong Khoảng thời gian 2, trong khi mô hình chưa thích ứng kịp với mức giảm này. Bên cạnh xu hướng âm chủ đạo, hai thời điểm vào cuối tháng 7 và đầu tháng 8 ghi nhận residual dương khoảng $+2.8$ đến $+3.1,\mu$g/m$^3$, cho thấy mô hình dự báo thấp hơn thực tế tại một số thời điểm ngắn.
+
+Histogram cho thấy phân phối residual lệch về phía âm. Phần lớn giá trị tập trung trong khoảng từ $-4$ đến $0,\mu$g/m$^3$, với mật độ cao nhất ở vùng gần $0$, trong khi một số sai lệch âm lớn tạo thành đuôi kéo dài đến khoảng $-9,\mu$g/m$^3$. Chỉ có hai ngày ghi nhận residual dương. Giá trị mean âm tương đối rõ cho thấy mô hình vẫn tồn tại \textbf{bias theo hướng dự báo cao hơn thực tế}. Hiện tượng này có thể liên quan đến việc mức nền PM2.5 trong giai đoạn Test thấp hơn đáng kể so với phần lớn dữ liệu mà mô hình đã quan sát trong quá trình huấn luyện. Vì vậy, mặc dù mô hình đã theo dõi được xu hướng chung, khả năng thích ứng trước sự thay đổi mức nền của chuỗi vẫn là một điểm cần tiếp tục cải thiện.
 
 \section{Kết luận}
 
