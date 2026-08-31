@@ -852,7 +852,13 @@ Bên cạnh những kết quả tích cực, tiểu luận còn một số hạn
     \item Tập dữ liệu mới chỉ có 28 ngày, nên việc đánh giá theo từng khoảng thời gian walk-forward, dù đáng tin cậy hơn một lượt dự báo duy nhất, vẫn dựa trên số lượng mẫu còn khiêm tốn.
 \end{itemize}
 
-Hướng phát triển tiếp theo có thể tập trung vào: cải tiến thành phần Xu hướng bằng các phương pháp trung bình trượt hoặc làm mượt thích nghi khác, hoặc kết hợp nhiều thành phần theo chu kỳ khác nhau; mở rộng thời gian thu thập dữ liệu mới để việc đánh giá walk-forward có ý nghĩa thống kê vững chắc hơn; và thử nghiệm kiến trúc Seq2seq Encoder–Decoder đầy đủ — kiến trúc mà GRU vốn được thiết kế nguyên bản để giải quyết — cho phần Residual, thay cho Direct GRU hiện tại.
+Tương ứng với từng hạn chế trên, hướng phát triển tiếp theo có thể tập trung vào:
+
+\begin{itemize}
+    \item Mở rộng thời gian thu thập dữ liệu lịch sử để bao phủ nhiều chu kỳ năm hơn, giúp mô hình học đầy đủ hơn tính chu kỳ mùa của PM2.5.
+    \item Cải tiến thành phần Xu hướng bằng các phương pháp trung bình trượt hoặc làm mượt thích nghi khác, hoặc kết hợp nhiều thành phần theo chu kỳ khác nhau, để bám kịp tốt hơn những biến động giảm đột ngột và kéo dài.
+    \item Mở rộng thời gian thu thập dữ liệu mới dùng để đánh giá, giúp việc đánh giá walk-forward theo từng khoảng thời gian có ý nghĩa thống kê vững chắc hơn.
+\end{itemize}
 
 \chapter*{Tài liệu tham khảo}
 \addcontentsline{toc}{chapter}{Tài liệu tham khảo}
