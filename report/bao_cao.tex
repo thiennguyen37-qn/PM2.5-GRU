@@ -65,17 +65,9 @@ Gia Lai, 2026
 \tableofcontents
 \newpage
 
-% \listoffigures và \listoftables trong report-class đều tự khởi đầu bằng \chapter*,
-% mà \chapter luôn ngắt sang trang mới — nên nếu gọi liên tiếp, "Danh sách bảng" sẽ
-% bị đẩy sang trang riêng dù còn dư chỗ. Ở đây chỉ để \listoffigures ngắt trang một
-% lần, còn danh sách bảng được chèn thủ công (không ngắt trang) để cả hai nằm chung 1 trang.
 \listoffigures
-\bigskip
-\makeatletter
-{\Large\bfseries\listtablename\par}
-\@mkboth{\MakeUppercase\listtablename}{\MakeUppercase\listtablename}
-\@starttoc{lot}
-\makeatother
+\newpage
+\listoftables
 \newpage
 
 % ==================== MỞ ĐẦU ====================
