@@ -19,7 +19,7 @@ Dữ liệu gốc tải trực tiếp từ API, theo giờ, từ `2016-01-01T00:
 
 - 3 dòng đầu file là **metadata vị trí** (latitude, longitude, elevation, utc_offset_seconds, timezone, timezone_abbreviation), không phải dữ liệu bảng — cần `skiprows=3` khi đọc bằng pandas.
 - Nhiều dòng đầu (2016 → giữa 2022) toàn giá trị `NaN` vì trạm/API chưa có dữ liệu ở giai đoạn đó.
-- Riêng `carbon_dioxide` và `methane` chỉ có dữ liệu ở một phần thời gian (15,329/92,640 dòng không rỗng), các cột còn lại có 34,865 dòng không rỗng.
+- Các cột chỉ số có 34,865 dòng không rỗng.
 
 ### Danh sách cột
 
@@ -29,11 +29,9 @@ Dữ liệu gốc tải trực tiếp từ API, theo giờ, từ `2016-01-01T00:
 | `pm10 (μg/m³)` | Bụi mịn PM10 (đường kính ≤ 10 μm) | μg/m³ |
 | `pm2_5 (μg/m³)` | Bụi mịn PM2.5 (đường kính ≤ 2.5 μm) | μg/m³ |
 | `carbon_monoxide (μg/m³)` | Khí Carbon Monoxide (CO) | μg/m³ |
-| `carbon_dioxide (ppm)` | Khí Carbon Dioxide (CO₂) | ppm |
 | `nitrogen_dioxide (μg/m³)` | Khí Nitrogen Dioxide (NO₂) | μg/m³ |
 | `sulphur_dioxide (μg/m³)` | Khí Sulphur Dioxide (SO₂) | μg/m³ |
 | `ozone (μg/m³)` | Khí Ozone (O₃) tầng mặt đất | μg/m³ |
-| `methane (μg/m³)` | Khí Methane (CH₄) | μg/m³ |
 | `uv_index_clear_sky ()` | Chỉ số UV giả định trời quang mây (không mây) | không đơn vị |
 | `uv_index ()` | Chỉ số UV thực tế (có tính đến mây) | không đơn vị |
 | `dust (μg/m³)` | Nồng độ bụi (dust aerosol) | μg/m³ |
@@ -47,7 +45,7 @@ Dữ liệu gốc tải trực tiếp từ API, theo giờ, từ `2016-01-01T00:
 
 1. Đọc `raw_data.csv`, bỏ qua 3 dòng metadata.
 2. Loại bỏ các dòng mà **toàn bộ** các cột chỉ số (trừ `time`) đều là `NaN` → cắt bỏ giai đoạn 2016 – đầu 2022-08 không có dữ liệu.
-3. Loại bỏ **các cột còn chứa `NaN`** → do đó `carbon_dioxide` và `methane` bị loại hoàn toàn (vì chỉ có dữ liệu một phần thời gian, không đủ để giữ lại).
+3. Loại bỏ các cột còn chứa `NaN` (không cột nào bị loại trong dữ liệu hiện tại — toàn bộ 10 cột chỉ số đều đầy đủ).
 4. Chuyển `time` sang kiểu datetime, tách thêm 4 cột: `day`, `month`, `year`, `hour`.
 5. Kiểm tra tính liên tục của chuỗi thời gian (cách đều 1 giờ) → đạt `True`.
 6. Lưu kết quả ra `cleaned_data.csv`.
