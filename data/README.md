@@ -9,7 +9,7 @@ Thư mục này chứa dữ liệu chất lượng không khí (Air Quality) l�
 | elevation | 9.0 m |
 | timezone | Asia/Bangkok (GMT+7) |
 
-Có 2 file CSV: `raw_data.csv` (dữ liệu thô) và `cleaned_data.csv` (dữ liệu đã làm sạch, dùng cho EDA/modeling).
+Có 4 file CSV: `raw_data.csv`/`cleaned_data.csv` (dữ liệu huấn luyện, thô và đã làm sạch) và `new_data.csv`/`new_data_cleaned.csv` (dữ liệu mới, thô và đã làm sạch — dùng làm tập Test hoàn toàn out-of-sample).
 
 ---
 
@@ -72,4 +72,19 @@ Kết quả: **34,865 dòng × 15 cột**, từ `2022-08-04 07:00:00` đến `20
 | `dust (μg/m³)` | Nồng độ bụi |
 | `aerosol_optical_depth ()` | Độ dày quang học sol khí (AOD) |
 
+---
+
+## 3. `new_data.csv` — Dữ liệu mới (thô)
+
+Dữ liệu mới tải từ cùng API và cùng vị trí, dùng làm tập Test hoàn toàn độc lập với dữ liệu huấn luyện — mô phỏng tình huống triển khai thực tế khi mô hình phải dự báo cho giai đoạn chưa từng "nhìn thấy". Theo giờ, từ `2026-07-27T00:00` đến `2026-08-24T23:00` (696 dòng = 29 ngày × 24 giờ).
+
+Cùng định dạng và cùng 10 cột chỉ số với `raw_data.csv` (xem bảng ở Mục 1), cũng cần `skiprows=3` khi đọc. Không có giai đoạn NaN kéo dài như `raw_data.csv` vì đây là dữ liệu mới, trạm/API đã hoạt động đầy đủ.
+
+## 4. `new_data_cleaned.csv` — Dữ liệu mới đã làm sạch
+
+Tương tự `cleaned_data.csv` nhưng cho `new_data.csv`, qua các bước làm sạch tương tự (loại bỏ dòng toàn `NaN`, loại cột còn chứa `NaN`, tách thêm `day`/`month`/`year`/`hour`).
+
+Kết quả: **696 dòng × 15 cột**, từ `2026-07-27 00:00:00` đến `2026-08-24 23:00:00`, liên tục theo từng giờ, không có giá trị thiếu. Cùng cấu trúc cột với `cleaned_data.csv` (xem bảng ở Mục 2).
+
+Được dùng làm tập Test trong notebook [`03_training_and_evaluation.ipynb`](../03_training_and_evaluation.ipynb) (mô hình hybrid cuối cùng).
 
